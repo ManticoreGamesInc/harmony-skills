@@ -1,5 +1,5 @@
 ---
 type: regex
 target: trace
-pattern: 'attachGameServices'
+pattern: '(?:\bPlayHarmony\??\.)?\battach\s*\('
 ---

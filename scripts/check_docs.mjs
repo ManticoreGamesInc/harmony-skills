@@ -11,13 +11,16 @@
 // From sdk.md it takes:
 // - the documented calls, from headings such as ### `harmony.auth.getSession(): ...`
 // - the documented exports and types, from those headings' signatures
-// - the attachGameServices options, from its "- `name` (" list
+// - the attach options, from the "- `name` (" list under ### `attach(
+// - which handle calls take no arguments, from signatures such as harmony.open(): void
 // - the package name, from its `npm install` line
 //
 // In every file under skills/ it fails on:
 // - a call on the Harmony handle that sdk.md doesn't document (harmony.auth.notDocumented(), ...)
 // - a name imported from the SDK package that sdk.md doesn't document
-// - an attachGameServices option, in code or in an options table, that sdk.md doesn't document
+// - an attach option, in code or in an options table, that sdk.md doesn't document
+// - an argument passed to a handle call sdk.md documents with none (harmony.open("friends"))
+// - a retired SDK name that sdk.md no longer documents (attachGameServices, pictureUrl, ...)
 // - an `npm install` of a different Harmony package name
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -31,12 +34,17 @@ const DEFAULT_SOURCE = "https://playharmony.ai/developers/sdk.md";
 // bridges hold JavaScript in strings.
 const SCANNED = /\.(md|mjs|js|ts|tsx|jsx|json|jslib|jspre|cs|gd)$/i;
 
-// Receivers the skills use for the handle attachGameServices resolves to.
+// Receivers the skills use for the handle attach resolves to.
 const HANDLE = "(?:harmony|handle|services|gameServices)";
 const SERVICES = "(?:auth|friends|files|chat)";
 // Any scoped npm package with "harmony" in its scope or name, so a skill that names a package
 // other than the one sdk.md installs is caught.
 const HARMONY_PACKAGE = "@(?:[\\w-]*harmony[\\w-]*\\/[\\w-]+|[\\w-]+\\/[\\w-]*harmony[\\w-]*)";
+// Names earlier SDK versions had. Each fails when sdk.md doesn't mention it, so a skill can't keep
+// using one after the docs drop it.
+const RETIRED = ["attachGameServices", "ManticoreHarmony", "pictureUrl", "joinUrl", "loadFakeGameServices"];
+// An attach call: attach({ ... }) from the package, or PlayHarmony.attach({ ... }) from a script tag.
+const ATTACH_CALL = /(?:\bPlayHarmony\??\.|(?<![\w.]))attach\s*\(\s*\{/g;
 
 async function readSource(source) {
 	if (/^https?:\/\//.test(source)) {
@@ -51,12 +59,16 @@ async function readSource(source) {
 
 function parseDocs(text) {
 	const calls = new Set();
+	const noArgs = new Set();
 	const exports = new Set();
 	for (const match of text.matchAll(/^#{2,4}\s+`([^`]+)`/gm)) {
 		const signature = match[1];
-		const call = signature.match(/^harmony\.([\w.]+)\s*\(/);
+		const call = signature.match(/^harmony\.([\w.]+)\s*\((\s*\))?/);
 		if (call) {
 			calls.add(call[1]);
+			if (call[2]) {
+				noArgs.add(call[1]);
+			}
 		} else {
 			const fn = signature.match(/^(\w+)\s*\(/);
 			if (fn) {
@@ -73,8 +85,11 @@ function parseDocs(text) {
 		throw new Error("no ### `harmony.<call>(` headings");
 	}
 	const options = new Set();
-	const attach = text.indexOf("### `attachGameServices(");
-	if (attach >= 0) {
+	const attach = text.indexOf("### `attach(");
+	if (attach < 0) {
+		throw new Error("no ### `attach( heading");
+	}
+	{
 		const next = text.indexOf("\n## ", attach + 1);
 		const section = next < 0 ? text.slice(attach) : text.slice(attach, next);
 		for (const option of section.matchAll(/^- `(\w+)` \(/gm)) {
@@ -82,7 +97,8 @@ function parseDocs(text) {
 		}
 	}
 	const pkg = (text.match(/npm install (@[\w-]+\/[\w-]+)/) || [])[1];
-	return { calls, exports, options, pkg };
+	const retired = new Set(RETIRED.filter((name) => !text.includes(name)));
+	return { calls, noArgs, exports, options, pkg, retired };
 }
 
 function listFiles(dir) {
@@ -150,11 +166,19 @@ function checkFile(file, text, docs, findings) {
 			fail(m.index, "harmony." + call + " isn't documented in sdk.md");
 		}
 	}
-	const handleCall = new RegExp("\\b" + HANDLE + "\\??\\.(\\w+)\\s*\\(", "g");
+	const handleCall = new RegExp("\\b" + HANDLE + "\\??\\.(\\w+)\\s*\\((\\s*\\))?", "g");
 	for (const m of text.matchAll(handleCall)) {
 		mentions = true;
 		if (!docs.calls.has(m[1])) {
 			fail(m.index, "harmony." + m[1] + "() isn't documented in sdk.md");
+		} else if (docs.noArgs.has(m[1]) && !m[2]) {
+			fail(m.index, "harmony." + m[1] + "() takes no arguments in sdk.md");
+		}
+	}
+	for (const name of docs.retired) {
+		for (const m of text.matchAll(new RegExp("\\b" + name + "\\b", "g"))) {
+			mentions = true;
+			fail(m.index, name + " is from an earlier SDK; sdk.md doesn't document it");
 		}
 	}
 	const prose = new RegExp("`" + HANDLE + "\\.(\\w+)`", "g");
@@ -165,7 +189,7 @@ function checkFile(file, text, docs, findings) {
 			fail(m.index, "harmony." + m[1] + " isn't documented in sdk.md");
 		}
 	}
-	if (new RegExp(HARMONY_PACKAGE + "|attachGameServices").test(text)) {
+	if (new RegExp(HARMONY_PACKAGE + "|PlayHarmony").test(text)) {
 		mentions = true;
 	}
 
@@ -179,10 +203,11 @@ function checkFile(file, text, docs, findings) {
 	}
 
 	if (docs.options.size) {
-		for (const m of text.matchAll(/attachGameServices\s*\(\s*\{/g)) {
+		const usesSdk = new RegExp(HARMONY_PACKAGE + "|PlayHarmony").test(text);
+		for (const m of usesSdk ? text.matchAll(ATTACH_CALL) : []) {
 			for (const key of objectKeys(text, m.index + m[0].length - 1)) {
 				if (!docs.options.has(key)) {
-					fail(m.index, "attachGameServices option `" + key + "` isn't documented in sdk.md");
+					fail(m.index, "attach option `" + key + "` isn't documented in sdk.md");
 				}
 			}
 		}
@@ -192,11 +217,11 @@ function checkFile(file, text, docs, findings) {
 		let offset = 0;
 		for (const line of lines) {
 			if (/^#{1,4}\s/.test(line)) {
-				inAttach = /attachGameServices/.test(line);
+				inAttach = /`attach`|\battach\(|PlayHarmony\.attach/.test(line);
 			}
 			const row = line.match(/^\|\s*`(\w+)`[^|]*\|/);
 			if (inAttach && row && !docs.options.has(row[1])) {
-				fail(offset, "attachGameServices option `" + row[1] + "` isn't documented in sdk.md");
+				fail(offset, "attach option `" + row[1] + "` isn't documented in sdk.md");
 			}
 			offset += line.length + 1;
 		}

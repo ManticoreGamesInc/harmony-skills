@@ -50,7 +50,7 @@ claude plugin validate . --strict
 
 `npm run check:skills` checks every skill's frontmatter (only the spec's fields, a `name` that matches its folder, a description of at most 1,024 characters, since agents and claude.ai refuse longer ones), its length, its links, and that the README and `marketplace.json` list it.
 
-`npm run check:docs` reads sdk.md and fails when a skill calls an SDK function, imports a name, passes an `attachGameServices` option or installs a package that sdk.md doesn't document. It names the file and line. It reads https://playharmony.ai/developers/sdk.md by default; to check against a saved copy (or while that page isn't reachable), pass its path: `npm run check:docs -- path/to/sdk.md`.
+`npm run check:docs` reads sdk.md and fails when a skill calls an SDK function, imports a name, passes an `attach` option or installs a package that sdk.md doesn't document. It also fails on a name from an earlier SDK version that sdk.md no longer documents, and on an argument passed to a call sdk.md documents with none, such as `harmony.open()`. It names the file and line. It reads https://playharmony.ai/developers/sdk.md by default; to check against a saved copy (or while that page isn't reachable), pass its path: `npm run check:docs -- path/to/sdk.md`.
 
 `npm test` runs the tests for the peer-to-peer room module (`skills/harmony-p2p-multiplayer/scripts/`).
 

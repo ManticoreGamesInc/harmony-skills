@@ -39,7 +39,7 @@ Only what the player needs to decide what to do next. List it, then cut:
 
 Harmony shows its overlay badge in one corner of every game it hosts, with or without the
 Harmony SDK: bottom right by default. Only a game that uses the SDK can move it, with the
-`badgeCorner` option of `attachGameServices`.
+`badgeCorner` option of `attach`.
 
 - Keep HUD elements, buttons and touch controls out of that corner, with some margin.
 - Without the SDK, the badge stays bottom right, so lay out the HUD to leave that corner free

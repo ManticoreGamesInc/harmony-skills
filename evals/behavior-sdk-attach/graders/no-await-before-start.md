@@ -1,6 +1,6 @@
 ---
 type: regex
 target: trace
-pattern: 'await\s+attachGameServices'
+pattern: 'await\s+(?:window\.)?(?:PlayHarmony\??\.)?attach\s*\('
 match: not_contains
 ---

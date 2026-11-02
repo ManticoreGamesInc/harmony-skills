@@ -1,13 +1,13 @@
 # Unity
 
-A WebGL (Web) build for Harmony, and the bridge from C#: the shared JavaScript file
-(`bridge-js.md`) bundled into a `.jspre`, a `.jslib`, and one C# component with a web
-implementation, an editor fake, and a do-nothing fallback. Menu names are from Unity 2022.3 and
-Unity 6; check the current Unity manual if a setting has moved.
+A WebGL (Web) build for Harmony, and the bridge from C#: a WebGL template that loads Harmony's
+loader script and the shared JavaScript file (`bridge-js.md`), a `.jslib`, and one C# component
+with a web implementation, an editor fake, and a do-nothing fallback. Menu names are from Unity
+2022.3 and Unity 6; check the current Unity manual if a setting has moved.
 
 ## Contents
 - Export settings
-- Bundling the JavaScript
+- The WebGL template
 - The .jslib
 - The C# component
 - The web implementation
@@ -17,9 +17,10 @@ Unity 6; check the current Unity manual if a setting has moved.
 
 ## Export settings
 
-- **WebGL Template** (Player Settings > Resolution and Presentation): Default or Minimal. Never
-  PWA: it registers a service worker, which hosted games can't use. A custom template based on
-  Default or Minimal is fine if it keeps paths relative and adds no service worker.
+- **WebGL Template** (Player Settings > Resolution and Presentation): Default or Minimal, or with
+  the bridge a custom template copied from one of them (below). Never PWA: it registers a service
+  worker, which hosted games can't use. A custom template is fine if it keeps paths relative and
+  adds no service worker.
 - **Threads:** leave WebGL multithreading (native C/C++ multithreading) off. A hosted game can't
   count on cross-origin isolation, so ship single-threaded.
 - **Compression** (Publishing Settings): Brotli is smallest and Gzip decompresses faster; both
@@ -43,17 +44,36 @@ Unity 6; check the current Unity manual if a setting has moved.
 - **Saves:** `PlayerPrefs` are stored in the browser for web builds. Without the bridge, keep one
   save for the device; with it, key them on `accountId`. Call `PlayerPrefs.Save()` after changes.
 - **Package:** build to an empty folder, serve its parent and open the build's subfolder to test,
-  then zip what's inside it (`index.html`, `Build/`, `TemplateData/`).
+  then zip what's inside it (`index.html`, `Build/`, `TemplateData/`, and with the bridge
+  `star-hopper-services.js`).
 
-## Bundling the JavaScript
+## The WebGL template
 
-Keep the source in a folder Unity ignores (`WebBridge~/star-hopper-services.js`, with
-`CONTAINER_ID = "unity-container"`, or `"unity-canvas"` with the Minimal template), and bundle it into a `.jspre`, which Unity puts into the
-build's loader so it runs while Unity is still downloading:
+The bridge needs two script tags in the build's page, so a game with the bridge gets its own
+WebGL template. There is nothing to install or bundle.
 
-```
-npx esbuild WebBridge~/star-hopper-services.js --bundle --format=iife --target=es2017 --minify --outfile=Assets/Plugins/WebGL/StarHopperServices.jspre
-```
+1. Copy the Default or Minimal template folder from the Unity install
+   (`PlaybackEngines/WebGLSupport/BuildTools/WebGLTemplates/`, under `Editor/Data/` on Windows)
+   to `Assets/WebGLTemplates/StarHopper/`, and pick it under Player Settings > Resolution and
+   Presentation > WebGL Template.
+2. Save the bridge file in the same folder, as
+   `Assets/WebGLTemplates/StarHopper/star-hopper-services.js`, with
+   `CONTAINER_ID = "unity-container"`, or `"unity-canvas"` with the Minimal template. Unity copies
+   the template's files into the build folder.
+3. In the template's `index.html`, add these first in `<head>`, so the bridge attaches while
+   Unity is still downloading:
+
+   ```html
+   <script src="https://cdn.playharmony.ai/v1/loader.js"></script>
+   <script src="star-hopper-services.js"></script>
+   ```
+
+4. In the window a player signs in through, the page only finishes sign-in, and the game
+   shouldn't start there. Wrap the template's code that starts Unity (in Default, the line that
+   adds the loader script to the page; in Minimal, the `createUnityInstance` call) in
+   `if (!window.__MANTICORE_AUTH_RETURN__) { ... }`.
+
+The loader serves the current SDK, so the game stays on the latest version without a new build.
 
 ## The .jslib
 
@@ -70,14 +90,17 @@ mergeInto(LibraryManager.library, {
       _free(buffer);
     });
   },
-  StarHopperServices_Open: function (tab) {
-    window.starHopperServices.open(UTF8ToString(tab));
+  StarHopperServices_Open: function () {
+    window.starHopperServices.open();
   },
   StarHopperServices_Close: function () {
     window.starHopperServices.close();
   },
   StarHopperServices_IsOpen: function () {
     return window.starHopperServices.isOpen() ? 1 : 0;
+  },
+  StarHopperServices_SignIn: function () {
+    window.starHopperServices.signIn();
   },
   StarHopperServices_RequestFriends: function () {
     window.starHopperServices.requestFriends();
@@ -112,7 +135,6 @@ public class ServicesEvent {
     public string accountId;
     public string displayName;
     public string discriminator;
-    public string pictureUrl;
     public string reason;
     public string code;
     public string outcome;
@@ -128,15 +150,16 @@ public class FriendInfo {
     public string discriminator;
     public bool online;
     public string currentGame;
-    public string joinUrl;
+    public string currentGameId;   // empty means unknown, never a different game
 }
 
 public interface IGameServices {
     void Start(Action<string> onEvent);
     void Tick();
-    void Open(string tab);
+    void Open();
     void Close();
     bool IsOpen();
+    void SignIn();
     void RequestFriends();
     void SaveFile(byte[] data, string suggestedName, string mimeType, string extension);
     void OpenFile(string mimeType, string extension);
@@ -199,9 +222,10 @@ public class StarHopperServices : MonoBehaviour {
         }
     }
 
-    public static void Open(string tab = "") { backend?.Open(tab); }
+    public static void Open() { backend?.Open(); }
     public static void Close() { backend?.Close(); }
     public static bool IsOpen() { return backend != null && backend.IsOpen(); }
+    public static void SignIn() { backend?.SignIn(); }   // from the player's click or key press
     public static void RequestFriends() { backend?.RequestFriends(); }
     public static void SaveFile(byte[] data, string suggestedName, string mimeType, string extension) { backend?.SaveFile(data, suggestedName, mimeType, extension); }
     public static void OpenFile(string mimeType, string extension) { backend?.OpenFile(mimeType, extension); }
@@ -215,9 +239,10 @@ public class NoGameServices : IGameServices {
 
     public void Start(Action<string> onEvent) { emit = onEvent; emit("{\"type\":\"unavailable\"}"); }
     public void Tick() {}
-    public void Open(string tab) {}
+    public void Open() {}
     public void Close() {}
     public bool IsOpen() { return false; }
+    public void SignIn() {}
     public void RequestFriends() { emit("{\"type\":\"friendsFailed\",\"reason\":\"unavailable\"}"); }
     public void SaveFile(byte[] data, string suggestedName, string mimeType, string extension) { emit("{\"type\":\"fileSaved\",\"outcome\":\"unavailable\"}"); }
     public void OpenFile(string mimeType, string extension) { emit("{\"type\":\"fileOpened\",\"outcome\":\"unavailable\"}"); }
@@ -238,9 +263,10 @@ using AOT;
 public class WebGameServices : IGameServices {
 
     [DllImport("__Internal")] private static extern void StarHopperServices_Listen(Action<string> callback);
-    [DllImport("__Internal")] private static extern void StarHopperServices_Open(string tab);
+    [DllImport("__Internal")] private static extern void StarHopperServices_Open();
     [DllImport("__Internal")] private static extern void StarHopperServices_Close();
     [DllImport("__Internal")] private static extern int StarHopperServices_IsOpen();
+    [DllImport("__Internal")] private static extern void StarHopperServices_SignIn();
     [DllImport("__Internal")] private static extern void StarHopperServices_RequestFriends();
     [DllImport("__Internal")] private static extern void StarHopperServices_SaveFile(string base64, string name, string mimeType, string extension);
     [DllImport("__Internal")] private static extern void StarHopperServices_OpenFile(string mimeType, string extension);
@@ -256,9 +282,10 @@ public class WebGameServices : IGameServices {
     private static void OnEvent(string json) { emit?.Invoke(json); }
 
     public void Tick() {}
-    public void Open(string tab) { StarHopperServices_Open(tab ?? ""); }
+    public void Open() { StarHopperServices_Open(); }
     public void Close() { StarHopperServices_Close(); }
     public bool IsOpen() { return StarHopperServices_IsOpen() == 1; }
+    public void SignIn() { StarHopperServices_SignIn(); }
     public void RequestFriends() { StarHopperServices_RequestFriends(); }
     public void SaveFile(byte[] data, string suggestedName, string mimeType, string extension) {
         StarHopperServices_SaveFile(Convert.ToBase64String(data), suggestedName, mimeType, extension);
@@ -269,9 +296,11 @@ public class WebGameServices : IGameServices {
 #endif
 ```
 
-Files: browsers show file dialogs only during the player's click or key, and Unity handles input
-a frame later. Test the dialogs in Chrome, Firefox and Safari, and handle `downloaded` and
-`cancelled`.
+Files and sign-in: browsers show file dialogs and sign-in windows only during the player's click
+or key, and Unity handles input a frame later. Call `SaveFile`, `OpenFile` and `SignIn` straight
+from the button's click handler, test them in Chrome, Firefox and Safari, and handle `downloaded`
+and `cancelled`. If a browser blocks the sign-in window, the player can still sign in from the
+overlay.
 
 ## The editor fake
 
@@ -296,13 +325,15 @@ public class FakeServicesSettings : ScriptableObject {
     public KeyCode overlayKey = KeyCode.F10;
     public KeyCode nextSessionKey = KeyCode.F9;
     public FriendInfo[] friends = {
-        new FriendInfo { accountId = "fake-friend-1", displayName = "Mina", discriminator = "4F2A", online = true, currentGame = "Star Hopper", joinUrl = "" },
-        new FriendInfo { accountId = "fake-friend-2", displayName = "<b>Rex</b>", discriminator = "9KQ1", online = false, currentGame = "", joinUrl = "" },
+        new FriendInfo { accountId = "fake-friend-1", displayName = "Mina", discriminator = "4F2A", online = true, currentGame = "Star Hopper", currentGameId = "YOUR_GAME_ID" },
+        new FriendInfo { accountId = "fake-friend-2", displayName = "<b>Rex</b>", discriminator = "9KQ1", online = false, currentGame = "", currentGameId = "" },
     };
 }
 ```
 
 The second friend's name is deliberately markup, so a label with rich text on shows the problem.
+Set the first friend's `currentGameId` to the game's own Game ID, so the fake has a friend in this
+game.
 
 ```csharp
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -365,12 +396,11 @@ public class FakeGameServices : IGameServices {
             e.accountId = "fake-" + e.kind;    // a guest who becomes an account keeps its id on Harmony
             e.displayName = settings.displayName;
             e.discriminator = settings.discriminator;
-            e.pictureUrl = "";
         }
         emit(JsonUtility.ToJson(e));
     }
 
-    public void Open(string tab) {
+    public void Open() {
         if (!open) {
             open = true;
             emit(JsonUtility.ToJson(new ServicesEvent { type = "overlay", open = true }));
@@ -385,6 +415,15 @@ public class FakeGameServices : IGameServices {
     }
 
     public bool IsOpen() { return open; }
+
+    // The fake signs straight in as an account, and sends the session as the bridge does.
+    public void SignIn() {
+        if (!attached || settings.attachFails) {
+            return;
+        }
+        session = FakeSessionKind.Account;
+        EmitSession();
+    }
 
     public void RequestFriends() {
         if (!attached || settings.attachFails) {
@@ -443,7 +482,7 @@ public class FakeGameServices : IGameServices {
 - Create the settings asset (Assets > Create > Star Hopper > Fake Services Settings) and assign it
   on the component. Change the session in the Inspector while playing, or press F9 to cycle
   signed out, guest and account; press F10 to open and close the "overlay"; tick Attach Fails to
-  test the game without Harmony.
+  test the game without Harmony. The game's own sign-in button signs the fake in as an account.
 - The fake uses the old Input Manager for its keys; with the Input System package only, read the
   keys with `Keyboard.current` instead.
 - A web build is still needed to test the real SDK: build, serve from a subfolder, and play it.
@@ -477,14 +516,20 @@ private void OnSession(ServicesEvent session) {
 - Show the `discriminator` beside the name where players need telling apart; key saves on
   `accountId`.
 - Request friends only for `account` sessions; for a guest, offer a button that calls
-  `StarHopperServices.Open("friends")`.
-- `currentGame` is display text; never compare it to decide anything.
+  `StarHopperServices.Open()`.
+- For a sign-in button of the game's own, call `StarHopperServices.SignIn()` from its click; a
+  `session` event follows when sign-in ends. Without one, players sign in from the overlay.
+- `currentGame` is display text; never compare it to decide anything. To tell whether a friend is
+  in this game, compare `currentGameId` with the Game ID (`GAME_ID` in the JavaScript file); empty
+  means unknown, never a different game.
 
 ## Bridging other JavaScript modules
 
 The same pattern wraps any JavaScript module; `bridge-js.md` has the wrapper for the
-peer-to-peer room (`window.starHopperRoom`). Bundle it to
-`Assets/Plugins/WebGL/StarHopperRoom.jspre`, then add a `.jslib` and a C# class:
+peer-to-peer room (`window.starHopperRoom`). It imports PeerJS, so it needs bundling, unlike the
+services file: keep its source in a folder Unity ignores (`WebBridge~/star-hopper-room.js`) and
+bundle it as `bridge-js.md` shows to `Assets/Plugins/WebGL/StarHopperRoom.jspre`, which Unity puts
+into the build's code. Then add a `.jslib` and a C# class:
 
 ```js
 mergeInto(LibraryManager.library, {
