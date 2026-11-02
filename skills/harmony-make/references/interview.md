@@ -166,7 +166,8 @@ itself"), never "it's up to you".
 
 ## 12. Multiplayer
 
-- Single player, local multiplayer on one device, online, or several?
+- Single player, local multiplayer on one device, online, or several? (These answers set the
+  Players boxes on Harmony's upload form.)
 - Online: co-op or versus? How many players? Real-time or turn-based?
 - How do players find each other: a room code shared with friends? (Harmony has no invites or
   rooms; see area 13.)

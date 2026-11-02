@@ -84,6 +84,16 @@ function parseDocs(text) {
 	if (!calls.size) {
 		throw new Error("no ### `harmony.<call>(` headings");
 	}
+	// Names sdk.md's own examples import from the package, such as loadFakeGameServices from its
+	// testing entry, count as documented too.
+	for (const m of text.matchAll(new RegExp("import\\s*\\{([^}]*)\\}\\s*from\\s*[\"']" + HARMONY_PACKAGE + "[^\"']*[\"']", "g"))) {
+		for (const raw of m[1].split(",")) {
+			const id = raw.replace(/\btype\s+/, "").split(/\s+as\s+/)[0].trim();
+			if (id) {
+				exports.add(id);
+			}
+		}
+	}
 	const options = new Set();
 	const attach = text.indexOf("### `attach(");
 	if (attach < 0) {

@@ -182,9 +182,13 @@ test("loads, plays a round and shows the results with no errors", async ({ page 
 - The test needs nothing from Harmony: no Harmony SDK and no Game ID. Harmony adds its overlay
   to every uploaded game, so many games never install the SDK, and this test runs them as they
   ship.
-- In a game that does use the SDK, Harmony isn't present in tests, so attaching fails. The game
-  must handle that quietly (a `console.warn`, not `console.error`) and play on; this test
-  proves it.
+- In a game that does use the SDK, the test build is a release build (`vite build`, whatever its
+  `--mode`), so it attaches to the real Harmony, which isn't there locally. The game must handle
+  that quietly (a `console.warn`, not `console.error`) and play on; this test proves it. Don't
+  replace the SDK with a hand-made mock to get past this.
+- The Harmony features themselves are tested against the SDK's fake: by hand on the dev server,
+  which attaches to it on its own (the overlay shows `fake`), and in jsdom with
+  `loadFakeGameServices` (see "Harmony SDK code" in [unit.md](unit.md)).
 - Wait on the hook's state, never on a fixed delay.
 
 ## Console errors and missing files

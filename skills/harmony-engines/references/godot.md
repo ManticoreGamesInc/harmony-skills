@@ -343,7 +343,10 @@ func open_file(extension: String) -> void:
 - Fake files live in `user://fake_files/` (Project > Open User Data Folder). Save a file there to
   test opening one.
 - A web build is still needed to test the real SDK: export, copy the bridge in, serve from a
-  subfolder, and play it.
+  subfolder, and play it. To try the bridge there against Harmony's fake (bot friends, no
+  sign-in), swap the loader tag in the exported `index.html` for
+  `https://cdn.playharmony.ai/v1/fake-loader.js`, and swap `loader.js` back, or export again,
+  before packaging.
 
 ## Using it in the game
 

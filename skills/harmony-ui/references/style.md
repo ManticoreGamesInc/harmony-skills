@@ -62,6 +62,9 @@ Every color, font, size, radius, shadow and duration is a token, defined once:
 - Canvas and engine UI read the same values (export them from one module for code to use).
 - A token changes once and the whole UI follows, which makes themes, color-blind modes and text
   scaling cheap.
+- A game that uses the Harmony SDK can match the Harmony overlay to these tokens with its
+  `--mtc-*` custom properties, set on an ancestor of the SDK's container (see "Theming the
+  overlay" in the harmony-sdk skill). Without the SDK, the overlay keeps Harmony's own theme.
 
 ## Fonts
 

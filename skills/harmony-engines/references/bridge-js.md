@@ -259,6 +259,10 @@ First in the page's `<head>`:
   and how the file reaches the build folder.
 - The loader serves the current SDK, so the game stays on the latest version without a rebuild.
   There is no npm install and no bundling for the services file.
+- To test a local web build against the SDK, load `https://cdn.playharmony.ai/v1/fake-loader.js`
+  in place of `loader.js` in the served build's page. The bridge attaches to Harmony's fake: the
+  real SDK with bot friends and chat, no sign-in, and `fake` shown in the overlay. Swap
+  `loader.js` back before packaging; the uploaded page always loads `loader.js`.
 - In the window a player signs in through, the page only finishes sign-in: the bridge doesn't
   attach there, and the engine reference shows how to keep the engine from starting there too.
 

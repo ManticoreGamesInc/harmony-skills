@@ -52,6 +52,9 @@ differ, follow it.
    - **Where have you played it start to finish?** PC, a phone (and in which orientations), a
      controller, VR. This sets Supported platforms in the listing. Recommended: Supported only
      where they played it; Unknown or Not supported for the rest, as listing.md describes.
+   - **Who plays?** Single player, local multiplayer, online multiplayer, co-op: tick every one
+     that applies, at least one. This sets Players in the listing. Recommended: what the game
+     has, as listing.md describes.
    - **Chat on or off?** Recommended: on, the form's default.
    - **The version,** only when the project has none. Recommended: `1.0.0` for a first upload.
 
@@ -77,8 +80,9 @@ differ, follow it.
 8. **Check the package** too: `node <this skill>/scripts/check_build.mjs <game.zip>`. It catches
    a zip with `index.html` one folder down.
 9. **Write the listing**: `release/<game>-<version>-listing.md`, with every field of the upload
-   form in the form's order: title, description, tags, supported platforms, the game file,
-   media and chat. Draft them from the project, then go through them with the developer. See
+   form in the form's order: title, description, tags, supported platforms, players, the game
+   file, media, chat and release notes. Draft them from the project, then go through them with
+   the developer. See
    [references/listing.md](references/listing.md).
 10. **Hand over**: give the developer the paths of the package and the listing, the file count
    and size the checker printed, each WARN you left and why, and these next steps: open My Creations on Harmony, fill in the
@@ -105,5 +109,5 @@ differ, follow it.
 | --- | --- |
 | [references/build-settings.md](references/build-settings.md) | Relative addresses and PWA settings for Vite, webpack, Parcel, esbuild, Phaser, three.js, PlayCanvas, Unity and Godot |
 | [references/packaging.md](references/packaging.md) | Making the `.zip` or the single `.html` on Windows, macOS and Linux |
-| [references/listing.md](references/listing.md) | The upload form field by field (limits, tags, supported platforms, media, chat, new versions) and the listing file to write |
+| [references/listing.md](references/listing.md) | The upload form field by field (limits, tags, supported platforms, players, media, chat, release notes, new versions) and the listing file to write |
 | [scripts/check_build.mjs](scripts/check_build.mjs) | Checks a build folder, `.html` or `.zip`: `index.html` at the top, service workers, file pickers, dev cheats left in, clipboard reads, root-absolute addresses, manifests, localhost. Exit code 1 on errors. `--json` for machine-readable output. |

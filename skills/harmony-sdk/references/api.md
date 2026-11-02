@@ -10,11 +10,14 @@ The examples call the handle `harmony`: the value `attach` resolves to, or that 
 
 - [attach](#attach)
 - [PlayHarmony.attach, from a script tag](#playharmonyattach-from-a-script-tag)
+- [The handle, and errors from every call](#the-handle-and-errors-from-every-call)
 - [harmony.detach](#harmonydetach)
 - [Overlay: open, close, toggle, isOpen, on](#overlay)
 - [auth: getSession, signIn, onSessionChanged](#auth)
 - [friends: list, onPresenceChanged](#friends)
 - [files: save, open](#files)
+- [Testing with the fake](#testing-with-the-fake)
+- [Theming the overlay](#theming-the-overlay)
 
 ## attach
 
@@ -24,10 +27,12 @@ attach(options: AttachOptions): Promise<GameServicesHandle>
 
 Connects the game to Harmony, adds the overlay over the game's container, and resolves to the handle. Call it once, as the page loads, on an element that is in the page from the start, such as one around the title screen and canvas. Start the game without waiting for it: don't `await` it before the game starts, or at the top level of a module. In the window a player signs in through, the promise never settles. When Harmony can't start, it rejects, which can take a while. Catch it, and let the game play on without Harmony's features.
 
+Import the SDK before any code that changes the page's address, such as a client-side router: sign-in returns to the address the game started at.
+
 | Option | Type | Meaning |
 | --- | --- | --- |
 | `gameId` | `string` | The game's Game ID, from its page in My Creations. Required. |
-| `container` | `HTMLElement` | The element the game draws in, such as its canvas or the element around it. The overlay sits over it. Required. |
+| `container` | `HTMLElement` | The element the game runs in, in this page: a wrapper around the game, or its canvas. Not `body` or `html`, so a full-page game needs a wrapper of its own. The overlay covers it. Required. |
 | `gameInfo` | `{ name?: string }` | The game's name, which labels its chat channel. |
 | `hotkey` | `{ key, shift?, ctrl?, alt?, meta? } \| null` | The key that opens and closes the overlay, matched against `KeyboardEvent.key`. Shift+Tab by default. `null` turns it off. |
 | `badgeCorner` | `"bottom-right" \| "bottom-left" \| "top-right" \| "top-left"` | The corner of the game the overlay's badge sits in. Bottom right by default. |
@@ -132,6 +137,35 @@ A game with no build step loads Harmony with a script tag instead of the package
 </script>
 ```
 
+While developing, load `https://cdn.playharmony.ai/v1/fake-loader.js` in place of the real loader, and swap it back before the game ships: see [Testing with the fake](#testing-with-the-fake).
+
+## The handle, and errors from every call
+
+The handle and its `auth`, `friends` and `files` are frozen. Keep the handle as it is: don't add fields to it, and keep it out of stores that wrap objects in deep proxies, such as Solid's `createStore` or MobX's `observable`. Store it in a plain variable, as the examples do.
+
+Every call can fail. Besides the codes its own section names, any call can reject with the `code` `"invalid_params"`, `"not_connected"`, `"unknown_method"` or `"internal"`. Wrap calls so the game keeps playing without Harmony's features, and branch on `error.code`, never on the message.
+
+```ts
+// showFriends and hideFriends are your own. Call this only for an account session.
+async function refreshFriends(): Promise<void> {
+  if (!harmony) {
+    hideFriends();
+    return;
+  }
+  try {
+    showFriends(await harmony.friends.list());
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code !== "guest_not_allowed" && code !== "not_signed_in") {
+      console.warn("Harmony friends failed", code);
+    }
+    hideFriends();
+  }
+}
+```
+
+No call reports the SDK's version. It is in the browser console on every attach, and in the overlay's About dialog, opened from the Harmony mark in its header.
+
 ## harmony.detach
 
 ```ts
@@ -151,6 +185,22 @@ function quitToTitle(): void {
 ## Overlay
 
 The overlay is the Harmony panel over the game, with the player's friends, chat and inbox. Players open it with its badge or Shift+Tab. The game can open it too, and should pause while it is open.
+
+While the overlay is open, the game gets no keyboard or pointer input: the SDK stops it before the game's listeners see it, and a click on the game closes the overlay. A key the player was holding still gets its `keyup`. The one exception is a capture listener on `window` that the game added before attaching. It should return early while the overlay is open, and not cancel keys, or typing in the overlay loses characters:
+
+```ts
+// Added before attach. handleGameKey is your own.
+window.addEventListener(
+  "keydown",
+  (event) => {
+    if (harmony?.isOpen()) {
+      return;   // the player is typing in the overlay: don't read or cancel the key
+    }
+    handleGameKey(event);
+  },
+  { capture: true },
+);
+```
 
 ### harmony.open
 
@@ -255,7 +305,7 @@ Harmony doesn't store game data. Keep progress in `localStorage` or `IndexedDB`,
 harmony.auth.getSession(): Promise<AuthSession>
 ```
 
-The player's session now. Its `kind` is `"account"` for a Harmony account, `"guest"` for a guest, or `"signedOut"`. Treat any other kind as not signed in. A guest or account session also has:
+The player's session now. Its `kind` is `"account"` for a Harmony account, `"guest"` for a guest, `"signedOut"`, or `"legalRequired"` while the player accepts updated terms in the overlay. Treat any kind but `"account"` and `"guest"` as not signed in. A guest or account session also has:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -495,3 +545,58 @@ openButton.addEventListener("click", async () => {
   }
 });
 ```
+
+## Testing with the fake
+
+While the developer works on the game, it attaches to the fake: the real SDK with a simulated backend of bot friends and chat, and no sign-in. It downloads like the real SDK, so it needs a network connection. The overlay shows `fake` at the bottom of its panel. The release build attaches to the real Harmony. Develop and test against the fake rather than a mock of the SDK.
+
+- **With the package,** the bundler's development build picks the fake on its own: Vite's dev server, webpack's `--mode development`, esbuild with `--conditions=development`. Parcel needs package exports turned on, and Rollup the `development` export condition. `vite build` is a release build.
+- **With a script tag,** load the fake loader in place of the real one while developing, and swap the real one back before the game ships:
+
+```html
+<!-- While developing only. The release page loads https://cdn.playharmony.ai/v1/loader.js. -->
+<script src="https://cdn.playharmony.ai/v1/fake-loader.js"></script>
+```
+
+For automated tests in a DOM emulation such as jsdom, `loadFakeGameServices` from `@playharmony/sdk/testing` downloads the fake into the test and returns its `attach`. Import it only from test files. A download can take up to 30 seconds, so raise the hook's timeout:
+
+```ts
+// Vitest with environment "jsdom".
+import { beforeAll, expect, test } from "vitest";
+import { loadFakeGameServices } from "@playharmony/sdk/testing";
+
+let attachFake: Awaited<ReturnType<typeof loadFakeGameServices>>;
+
+beforeAll(async () => {
+  attachFake = await loadFakeGameServices();
+}, 90_000);
+
+test("the game attaches to Harmony", async () => {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const harmony = await attachFake({ gameId: "YOUR_GAME_ID", container });
+  expect(harmony.isOpen()).toBe(false);
+  harmony.detach();
+});
+```
+
+Pass the handle the fake returns to the game's own Harmony code, the same code that gets the real handle from `attach`. The harmony-testing skill covers the rest of a game's tests.
+
+## Theming the overlay
+
+The overlay uses Harmony's light theme by default. Set these CSS custom properties on any ancestor of the game's container to change it, using the game's own palette and font. The panel and its confirmation cards sit on Harmony's art, so they keep their own text and surface colors; the accent, font, radius and the online and danger colors still apply there.
+
+```css
+:root {
+  --mtc-accent: #ff5c8a;   /* names, links, icons, buttons */
+  --mtc-surface: #171320;  /* menus, popups and dialogs */
+  --mtc-text: #f2eef7;     /* the text on those */
+  --mtc-backdrop: rgba(10, 6, 16, 0.65);
+  --mtc-radius: 14px;
+  --mtc-font: "Inter", system-ui, sans-serif;
+  --mtc-online: #4ade80;   /* presence dots */
+  --mtc-danger: #ff6b6b;   /* destructive actions, errors */
+}
+```
+
+A game with theme tokens can point these at them, as in `--mtc-accent: var(--ui-accent);`.

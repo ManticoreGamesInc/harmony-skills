@@ -34,7 +34,8 @@ report.
 1. **Seeded randomness** ([references/unit.md](references/unit.md)): every random number from one
    seeded generator, so any run can be replayed exactly.
 2. **Unit tests** for the rules: scoring, damage, win and loss, level generation, reward math,
-   save and settings parsing. Fast, no browser.
+   save and settings parsing. Fast, no browser. In a game that uses the Harmony SDK, add tests of
+   its Harmony code against the SDK's fake ([references/unit.md](references/unit.md)).
 3. **Test hooks** ([references/browser.md](references/browser.md)): a small, test-only object on
    `window` that tells the tests what state the game is in and lets them start a round, skip a
    level or set a seed.
@@ -56,9 +57,16 @@ report.
   hooks.
 - **No Harmony needed.** Harmony adds its overlay to every uploaded game with no code, so many
   games never install the Harmony SDK or get a Game ID. Every test here works for those games
-  as they are. In a game that does use the SDK, Harmony isn't present in tests, so attaching
-  fails: the game must start and play on, and the smoke test proves it. Test its Harmony
-  features through the game's own wrapper around the SDK, with a fake of that wrapper.
+  as they are. A game that does use the SDK tests it against the SDK's fake, never a mock or
+  stub written by hand:
+  - The dev server and other development builds attach to the fake on their own (bot friends
+    and chat, no sign-in; the overlay shows `fake`). A page that loads the SDK with a script tag
+    loads `fake-loader.js` while developing instead. Play the Harmony features there.
+  - Tests of the game's Harmony code run in jsdom with `loadFakeGameServices` from
+    `@playharmony/sdk/testing`, with a raised hook timeout (unit.md).
+  - The smoke test runs a release build (`vite build`, whatever its `--mode`), which attaches to
+    the real Harmony. Harmony isn't there locally, so the game must start and play on without
+    it, and the smoke test proves it.
 - **Keep the runners apart.** The unit test runner skips `tests/browser`, and Playwright runs
   only that folder, on a port of its own (see Setup in browser.md).
 - **Fail on console errors** and uncaught exceptions, not only on failed assertions.
@@ -69,11 +77,13 @@ report.
 - **Hooks stay out of the shipped build**, or are inert in it: build them only in test and
   development builds.
 - **Fast enough to run every time:** unit tests in seconds, the smoke test in under a minute.
+  Tests against the Harmony fake download it first, which can take up to 30 seconds and needs a
+  network connection.
   Run both before every build that's uploaded.
 
 ## Reference files
 
 | File | Read when |
 | --- | --- |
-| [references/unit.md](references/unit.md) | Seeded randomness, testing rules, fixed-step simulation and replays, saves and settings, fuzzing inputs |
+| [references/unit.md](references/unit.md) | Seeded randomness, testing rules, fixed-step simulation and replays, saves and settings, fuzzing inputs, Harmony SDK code against the fake |
 | [references/browser.md](references/browser.md) | Playwright setup and keeping Vitest off the browser specs, serving from a subfolder on a port of its own, test hooks, the smoke test, console errors, GPU in test browsers, two players with a local signaling server, phone size, slow networks, screenshots |

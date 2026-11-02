@@ -486,6 +486,9 @@ public class FakeGameServices : IGameServices {
 - The fake uses the old Input Manager for its keys; with the Input System package only, read the
   keys with `Keyboard.current` instead.
 - A web build is still needed to test the real SDK: build, serve from a subfolder, and play it.
+  To try the bridge there against Harmony's fake (bot friends, no sign-in), swap the loader tag
+  in the build folder's `index.html` for `https://cdn.playharmony.ai/v1/fake-loader.js`, and
+  swap `loader.js` back, or build again, before packaging.
 
 ## Using it in the game
 
