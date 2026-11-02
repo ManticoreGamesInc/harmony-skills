@@ -55,7 +55,7 @@ For console errors on the phone, use remote debugging: `chrome://inspect` on the
   ```
 
 - Check the prompts switch to controller buttons when the controller is used, and back when the mouse or keyboard is.
-- If the game uses the Harmony SDK, open the overlay with the controller's View or Select button, and check the game pauses. This needs the hosted game on Harmony, since the overlay isn't there locally.
+- If the game uses the Harmony SDK, open the overlay with the controller's View or Select button, and check the game pauses. Do it on the development build, which attaches to Harmony's fake and shows its overlay, or on the hosted game on Harmony.
 
 ## PC
 

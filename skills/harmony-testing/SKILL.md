@@ -64,9 +64,10 @@ report.
     loads `fake-loader.js` while developing instead. Play the Harmony features there.
   - Tests of the game's Harmony code run in jsdom with `loadFakeGameServices` from
     `@playharmony/sdk/testing`, with a raised hook timeout (unit.md).
-  - The smoke test runs a release build (`vite build`, whatever its `--mode`), which attaches to
-    the real Harmony. Harmony isn't there locally, so the game must start and play on without
-    it, and the smoke test proves it.
+  - The smoke test runs a release build (`vite build`, whatever its `--mode`). Served locally,
+    it loads the live Harmony service from the CDN, not the fake, so the smoke test only checks
+    the game starts and plays without waiting for Harmony. Test Harmony features on a
+    development build or with `fake-loader.js`, never on a local release build.
 - **Keep the runners apart.** The unit test runner skips `tests/browser`, and Playwright runs
   only that folder, on a port of its own (see Setup in browser.md).
 - **Fail on console errors** and uncaught exceptions, not only on failed assertions.
