@@ -22,8 +22,8 @@ runs no game servers and has no invite API, so these rooms work the same there. 
 neither the Harmony SDK nor a Game ID: players type a name, and inviting is copying the room
 code. A few things change: the game doesn't pause for the overlay during a session, and it runs
 in a frame inside Harmony's page, where it can't read the clipboard. A game that already uses
-the SDK can also start players with their Harmony name and open the overlay's chat to share the
-code. Read `references/harmony.md` when the game is, or will be, on Harmony.
+the SDK can also start players with their Harmony name and open the overlay, where they can
+paste the code in chat. Read `references/harmony.md` when the game is, or will be, on Harmony.
 
 **Real-time or turn-based?** Real-time games (shooters, racers, co-op action) need the whole
 recipe: lossy snapshots, interpolation, puppets. Turn-based games (board, card, puzzle,
@@ -278,7 +278,7 @@ the rest of the session and is paid for again on every later call, so read them 
 | `references/shared_objects.md` | Jigsaws, sandboxes, card tables: locks, optimistic grabs and rollback, host-decided results, event counter and resync, loading gate, chunked snapshots |
 | `references/self_hosting.md` | Running your own signaling server and coturn: where to host, `wss`, proxies, the ICE endpoint, fail-closed relay, coturn hardening |
 | `references/engines.md` | Wiring the room into a web engine's loop, and keeping it alive in a hidden tab |
-| `references/harmony.md` | Games hosted on Harmony, with or without the SDK: typed names, sharing the code, optional SDK extras (Harmony names, the overlay's chat), the overlay and pausing, the game's frame, testing on Harmony |
+| `references/harmony.md` | Games hosted on Harmony, with or without the SDK: typed names, sharing the code, optional SDK extras (Harmony names, an Invite button that opens the overlay), the overlay and pausing, the game's frame, testing on Harmony |
 | `references/ui.md` | Building the multiplayer screens in the project's own UI style, plus tested wording |
 | `references/testing.md` | Local server, two-window tests, fake-peer harness, debugging recipes |
 | `scripts/p2p_room.js` | ES module to copy unchanged into a web game: rooms, codes, approval, kicks, channels, limits, relay, simulator, validation helpers, `loadIce`, `chunkText` / `ChunkJoiner`, `fingerprint` |

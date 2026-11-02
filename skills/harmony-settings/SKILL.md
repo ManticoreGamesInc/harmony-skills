@@ -71,7 +71,7 @@ Details, defaults and how to apply each: [references/options.md](references/opti
 - **Labels from the language files** when the game is translated; never hard-coded.
 - **Don't take the Harmony overlay's key.** Shift+Tab opens the Harmony overlay in every game
   Harmony hosts. Don't let players bind it to a game action. Only a game that uses the Harmony
-  SDK can change the overlay's key, with the `hotkey` option of `attachGameServices` (see
+  SDK can change the overlay's key, with the `hotkey` option of `attach` (see
   Harmony's SDK docs, https://playharmony.ai/developers/sdk.md, or the `harmony-sdk` skill);
   without the SDK, the game leaves Shift+Tab free.
 

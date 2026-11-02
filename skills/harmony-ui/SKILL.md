@@ -61,7 +61,7 @@ game best, and say why in one line.
   or the controller's back button always goes back one step.
 - **Clear of the Harmony badge.** Harmony draws its overlay badge in one corner of every game
   it hosts, with or without the Harmony SDK: bottom right, unless a game with the SDK picks
-  another with the `badgeCorner` option of `attachGameServices`. Keep HUD elements and buttons
+  another with the `badgeCorner` option of `attach`. Keep HUD elements and buttons
   out of that corner.
 - **A pause the player can always reach.** The game's own pause key or button opens the pause
   screen. A game that uses the Harmony SDK also pauses (single player) when the overlay opens

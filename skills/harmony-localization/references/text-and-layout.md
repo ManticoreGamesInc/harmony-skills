@@ -72,8 +72,9 @@ Arabic, Hebrew, Persian and Urdu read right to left, and the interface mirrors.
 
 ## Player names and other text from players
 
-Names from Harmony (`displayName`, a friend's `currentGame`), chat, and anything players type
-can be in any script, in either direction, whatever language the game is in.
+Names from Harmony (`displayName`, a friend's `currentGame`), messages in the game's own chat,
+and anything players type can be in any script, in either direction, whatever language the game
+is in.
 
 - Never translate or change them, and always show them as text (`textContent` or the engine's
   text call), never HTML.

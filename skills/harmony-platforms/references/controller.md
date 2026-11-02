@@ -160,7 +160,7 @@ if (actions.wasPressed("overlay") && harmony) {
 }
 ```
 
-Pause the game while the overlay is open (`harmony.on("open", ...)` and `harmony.on("close", ...)`), and tell controller players which button opens it, for example in the pause menu. `harmony` is the handle from `attachGameServices`, and is `null` when Harmony isn't available, as in local development.
+Pause the game while the overlay is open (`harmony.on("open", ...)` and `harmony.on("close", ...)`), and tell controller players which button opens it, for example in the pause menu. `harmony` is the handle from `attach`, and is `null` when Harmony isn't available, as in local development.
 
 ## Engines
 

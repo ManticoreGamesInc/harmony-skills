@@ -37,8 +37,8 @@ state them. The media slots' sizes and formats are fixed rules on the form, and 
 step follows them; where the form shows something different, the form wins.
 
 After the game is created, its page in My Creations shows its Game ID. Only a game that uses
-the Harmony SDK needs it, in its `attachGameServices` call. A game without the SDK needs no Game
-ID, before or after uploading.
+the Harmony SDK needs it, in its `attach` call (`PlayHarmony.attach` in a game that loads the
+SDK with a script tag). A game without the SDK needs no Game ID, before or after uploading.
 
 ### Title
 

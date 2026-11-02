@@ -9,7 +9,8 @@ skill applies unchanged. This file covers what is different on Harmony.
 Harmony adds its overlay to every uploaded game with no code, and many games never install the
 SDK. Without it, players type a name and invite friends by copying the room code, and
 everything in this skill works. When the game already uses the SDK, it can add two extras: the
-player's Harmony name as the starting name, and an Invite button that opens the overlay's chat.
+player's Harmony name as the starting name, and an Invite button that copies the code and opens
+the overlay, where the player can paste it in chat.
 Don't install the SDK only for these. Every SDK call below sits behind a check that the game
 has the SDK, so the game runs the same without it.
 
@@ -30,9 +31,12 @@ file and those docs differ, follow the docs.
 - **No invite or room API.** The game can't send chat messages, invites or friend requests,
   with or without the SDK. The overlay handles those. Players share the room code themselves.
 - **Friends are read only, and only with the SDK.** With an account session,
-  `harmony.friends.list()` gives the
-  player's friends with `online` and `currentGame`. That is enough for a hint ("3 friends
-  online") on the room panel. It isn't a way to find or join a room.
+  `harmony.friends.list()` gives the player's friends with `online`, `currentGame` and
+  `currentGameId`. It rejects with `guest_not_allowed` for a guest and `not_signed_in` when no
+  one is signed in; show the room panel without friends then. The list is enough for a hint
+  ("3 friends online, 1 in this game") on the room panel. It isn't a way to find or join a room.
+- **Use `currentGameId` to tell who is in your game.** Compare it with your own Game ID. When
+  it is absent, Harmony doesn't know, so count that friend as unknown, not as in another game.
 - **`currentGame` is display text.** Creators write game titles freely. Never compare it to
   decide whether a friend is in your game, and show it as text, never HTML.
 - **Signaling and TURN are yours.** The free public PeerJS server is fine for testing. For a
@@ -48,7 +52,7 @@ In a game that already uses the SDK, start the field with the player's Harmony n
 The player can still change it:
 
 ```js
-// harmony is the handle from attachGameServices in a game that uses the SDK; null otherwise.
+// harmony is the handle from attach in a game that uses the SDK; null otherwise.
 async function startingName() {
 	const saved = loadSettings().roomName;   // what the player typed last time, if anything
 	if (saved) {
@@ -64,8 +68,8 @@ async function startingName() {
 }
 ```
 
-- **Send only the name and the tag.** Never put `accountId`, tokens or `pictureUrl` in the
-  look or any other message. Every peer, and anyone who tries the code, sees what you send.
+- **Send only the name and the tag.** Never put `accountId` or tokens in the look or any
+  other message. Every peer, and anyone who tries the code, sees what you send.
 - **A name from a peer proves nothing.** Over P2P, any client can claim any name, including a
   Harmony player's. Clean it with `cleanName(name, 20)` (Harmony names are up to 20
   characters) and the tag with `cleanId(tag, 4)`, like any other peer input, and never show it as a verified Harmony identity.
@@ -85,9 +89,9 @@ game:
   friend." If the copy fails, select the code on screen so the player can copy it themselves.
   Players paste it into Harmony's chat, or anywhere else they talk.
 - **Invite friends (SDK only).** In a game that already uses the SDK, this button copies the
-  code and opens the overlay's chat: `harmony.open("chat")`. Say what to do next: "Code
-  copied. Paste it to a friend in chat." Without the SDK, leave the button out; Copy does the
-  job.
+  code and opens the overlay with `harmony.open()`, where the player can paste it to a friend
+  in chat. Say what to do next: "Code copied. Paste it to a friend in chat." Without the SDK,
+  leave the button out; Copy does the job.
 - Send the bare code, never a URL. Chat may not make links clickable, and a code reads
   cleanly when typed.
 

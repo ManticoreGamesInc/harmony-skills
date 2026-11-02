@@ -1,13 +1,13 @@
 # Godot
 
-A Web export for Harmony, and the bridge from GDScript: the shared JavaScript file
-(`bridge-js.md`) bundled and loaded through the export's Head Include, and one autoload that uses
-`JavaScriptBridge` in web builds and a local fake in the editor and debug builds. Names are from
-Godot 4.3 and newer; check Godot's docs if a setting has moved.
+A Web export for Harmony, and the bridge from GDScript: Harmony's loader script and the shared
+JavaScript file (`bridge-js.md`) loaded through the export's Head Include, and one autoload that
+uses `JavaScriptBridge` in web builds and a local fake in the editor and debug builds. Names are
+from Godot 4.3 and newer; check Godot's docs if a setting has moved.
 
 ## Contents
 - Export settings
-- Bundling and loading the JavaScript
+- Loading the JavaScript
 - The autoload
 - The editor fake
 - Using it in the game
@@ -37,24 +37,28 @@ Godot 4.3 and newer; check Godot's docs if a setting has moved.
 - **Package:** export, copy the bridge file in if the game has one (below), serve the folder's parent and open the
   export's subfolder to test, then zip what's inside the export folder.
 
-## Bundling and loading the JavaScript
+## Loading the JavaScript
 
-Keep the source in `web_bridge/star-hopper-services.js`, with `CONTAINER_ID = "canvas"`, and
-bundle it:
+Save the bridge file as `web_bridge/star-hopper-services.js`, with `CONTAINER_ID = "canvas"`.
+There is nothing to install or bundle.
 
-```
-npx esbuild web_bridge/star-hopper-services.js --bundle --format=iife --target=es2017 --minify --outfile=web_bridge/dist/star-hopper-services.js
-```
-
-- Web export preset > **Head Include**:
+- Web export preset > **Head Include**, which Godot puts in the page's `<head>`, ahead of the
+  engine's own scripts:
 
   ```html
+  <script src="https://cdn.playharmony.ai/v1/loader.js"></script>
   <script src="star-hopper-services.js"></script>
   ```
 
-- After each export, copy `web_bridge/dist/star-hopper-services.js` next to `index.html` in the
-  export folder. A small script that exports and copies keeps this from being forgotten.
-- Exclude `web_bridge/*` and `node_modules/*` from the export with the preset's filters.
+- After each export, copy `web_bridge/star-hopper-services.js` next to `index.html` in the export
+  folder. A small script that exports and copies keeps this from being forgotten.
+- Exclude `web_bridge/*` from the export with the preset's filters.
+- The loader serves the current SDK, so the game stays on the latest version without a new
+  export.
+- In the window a player signs in through, the page only finishes sign-in. The bridge doesn't
+  attach there, but Godot's own page still starts the engine. To skip that, export with a Custom
+  HTML Shell (a copy of Godot's default one) and wrap its `engine.startGame(...)` call in
+  `if (!window.__MANTICORE_AUTH_RETURN__) { ... }`.
 
 ## The autoload
 
@@ -128,9 +132,9 @@ func _handle(event: Dictionary) -> void:
 			file_opened.emit(str(event.get("outcome", "failed")), str(event.get("name", "")), data)
 
 
-func open_overlay(tab: String = "") -> void:
+func open_overlay() -> void:
 	if _web:
-		_web.open(tab)
+		_web.open()
 	elif _fake:
 		_fake.open_overlay()
 
@@ -146,6 +150,14 @@ func is_overlay_open() -> bool:
 	if _web:
 		return bool(_web.isOpen())
 	return _fake != null and _fake.is_open
+
+
+# Call from the player's click or key press: sign-in may open a window.
+func sign_in() -> void:
+	if _web:
+		_web.signIn()
+	elif _fake:
+		_fake.sign_in()
 
 
 func request_friends() -> void:
@@ -177,9 +189,11 @@ func open_file(mime_type: String, extension: String) -> void:
 
 Follow the project's own naming and code style when writing it in; the structure is what matters.
 
-Files: browsers show file dialogs only during the player's click or key, and Godot handles input
-a frame later. Test the dialogs in Chrome, Firefox and Safari, and handle `downloaded` and
-`cancelled`.
+Files and sign-in: browsers show file dialogs and sign-in windows only during the player's click
+or key, and Godot handles input a frame later. Call `save_file`, `open_file` and `sign_in` straight
+from the button's `pressed` handler, test them in Chrome, Firefox and Safari, and handle
+`downloaded` and `cancelled`. If a browser blocks the sign-in window, the player can still sign in
+from the overlay.
 
 ## The editor fake
 
@@ -202,12 +216,14 @@ extends Resource
 @export var overlay_key: Key = KEY_F10
 @export var next_session_key: Key = KEY_F9
 @export var friends: Array[Dictionary] = [
-	{"accountId": "fake-friend-1", "displayName": "Mina", "discriminator": "4F2A", "online": true, "currentGame": "Star Hopper", "joinUrl": ""},
-	{"accountId": "fake-friend-2", "displayName": "[b]Rex[/b]", "discriminator": "9KQ1", "online": false, "currentGame": "", "joinUrl": ""},
+	{"accountId": "fake-friend-1", "displayName": "Mina", "discriminator": "4F2A", "online": true, "currentGame": "Star Hopper", "currentGameId": "YOUR_GAME_ID"},
+	{"accountId": "fake-friend-2", "displayName": "[b]Rex[/b]", "discriminator": "9KQ1", "online": false, "currentGame": "", "currentGameId": ""},
 ]
 ```
 
-The second friend's name is deliberately BBCode, so a label with BBCode on shows the problem.
+The second friend's name is deliberately BBCode, so a label with BBCode on shows the problem. Set
+the first friend's `currentGameId` to the game's own Game ID, so the fake has a friend in this
+game.
 Save one as `res://fake_services/fake_services_settings.tres` and edit it in the Inspector.
 
 `fake_services/fake_game_services.gd`:
@@ -267,7 +283,6 @@ func _emit_session() -> void:
 		"accountId": "fake-" + kind,
 		"displayName": _settings.display_name,
 		"discriminator": _settings.discriminator,
-		"pictureUrl": "",
 	})
 
 
@@ -281,6 +296,14 @@ func close_overlay() -> void:
 	if is_open:
 		is_open = false
 		_emit.call({"type": "overlay", "open": false})
+
+
+# The fake signs straight in as an account, and sends the session as the bridge does.
+func sign_in() -> void:
+	if not _attached or _settings.attach_fails:
+		return
+	_settings.session_kind = "account"
+	_emit_session()
 
 
 func request_friends() -> void:
@@ -315,7 +338,8 @@ func open_file(extension: String) -> void:
 ```
 
 - Press F10 to open and close the "overlay", F9 to cycle signed out, guest and account; tick
-  Attach Fails in the settings to test the game without Harmony.
+  Attach Fails in the settings to test the game without Harmony. The game's own sign-in button
+  signs the fake in as an account.
 - Fake files live in `user://fake_files/` (Project > Open User Data Folder). Save a file there to
   test opening one.
 - A web build is still needed to test the real SDK: export, copy the bridge in, serve from a
@@ -343,15 +367,22 @@ func _on_session_changed(new_session: Dictionary) -> void:
 - Show the `discriminator` beside the name where players need telling apart; key saves on
   `accountId`.
 - Request friends only for `account` sessions; for a guest, offer a button that calls
-  `StarHopperServices.open_overlay("friends")`.
-- `currentGame` is display text; never compare it to decide anything.
+  `StarHopperServices.open_overlay()`.
+- For a sign-in button of the game's own, call `StarHopperServices.sign_in()` from its `pressed`
+  signal; a `session_changed` signal follows when sign-in ends. Without one, players sign in from
+  the overlay.
+- `currentGame` is display text; never compare it to decide anything. To tell whether a friend is
+  in this game, compare `currentGameId` with the Game ID (`GAME_ID` in the JavaScript file); empty
+  means unknown, never a different game.
 
 ## Bridging other JavaScript modules
 
 The same pattern wraps any JavaScript module; `bridge-js.md` has the wrapper for the
-peer-to-peer room (`window.starHopperRoom`). Bundle it to `web_bridge/dist/star-hopper-room.js`,
-add a second `<script src="star-hopper-room.js"></script>` to the Head Include, copy it into the
-export folder with the services file, and talk to it from an autoload:
+peer-to-peer room (`window.starHopperRoom`). It imports PeerJS, so it needs bundling, unlike the
+services file: keep its source in `web_bridge/star-hopper-room.js`, bundle it as `bridge-js.md`
+shows to `web_bridge/dist/star-hopper-room.js`, add `<script src="star-hopper-room.js"></script>`
+to the Head Include after the other two, copy the bundled file into the export folder with the
+services file, and exclude `node_modules/*` from the export too. Talk to it from an autoload:
 
 ```gdscript
 extends Node

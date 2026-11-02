@@ -6,7 +6,7 @@ language and style.
 
 Most games have no Harmony SDK and no Game ID. For them, every save belongs to the `"device"`
 owner, and the parts marked "with the SDK" don't apply. In a game with the SDK, the examples
-call the Harmony handle `harmony`: the value `attachGameServices` resolves to, or `null` without
+call the Harmony handle `harmony`: the value `attach` resolves to, or `null` without
 Harmony. Names such as `startGame`, `showToast` or `confirmDialog` stand for the game's own code.
 
 ## Contents
@@ -104,7 +104,7 @@ function useOwner(next: string): void {
   showProgress(save);
 }
 
-attachGameServices({ gameId: "YOUR_GAME_ID", container })
+attach({ gameId: "YOUR_GAME_ID", container })
   .then(async (handle) => {
     harmony = handle;
     useOwner(ownerOf(await handle.auth.getSession()));
@@ -114,6 +114,10 @@ attachGameServices({ gameId: "YOUR_GAME_ID", container })
 
 startGame();
 ```
+
+A game with no build step loads Harmony with a script tag, and `PlayHarmony.attach` there
+returns the handle itself, not a promise (sdk.md shows how): run the same steps on that handle,
+and use `"device"` when it is missing.
 
 When the round ends and `save` is still `null`, push the result onto `heldResults` and show the
 results screen without the totals. Without the SDK, `save` is set before the first round, so
