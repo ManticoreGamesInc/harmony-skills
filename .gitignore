@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+__pycache__/
+.venv/
+
+# Build output
+dist/
+release/
+
+# Caches, logs and scratch
+.cache/
+temp/
+*.log
+
+# Secrets and per-user config
+.env
+.env.*
+.claude/settings.local.json
+.claude/launch.json
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Eval results
+evals/results/

@@ -1,0 +1,38 @@
+{
+  "name": "harmony-skills",
+  "owner": {
+    "name": "Manticore Games"
+  },
+  "metadata": {
+    "description": "Agent skills for making web games and publishing them on Harmony."
+  },
+  "plugins": [
+    {
+      "name": "harmony",
+      "description": "Skills for web games on Harmony: making a game from an idea, the Harmony SDK, game engines, menus and HUD, saves and progression, settings, sound and music, 3D models, game feel, phones and controllers, peer-to-peer multiplayer, localization, performance, developer tools, testing, store media, and getting a build ready to upload.",
+      "version": "0.1.0",
+      "source": "./",
+      "strict": false,
+      "license": "MIT",
+      "skills": [
+        "./skills/harmony-make",
+        "./skills/harmony-sdk",
+        "./skills/harmony-engines",
+        "./skills/harmony-ui",
+        "./skills/harmony-progression",
+        "./skills/harmony-settings",
+        "./skills/harmony-audio",
+        "./skills/harmony-models",
+        "./skills/harmony-feel",
+        "./skills/harmony-platforms",
+        "./skills/harmony-p2p-multiplayer",
+        "./skills/harmony-localization",
+        "./skills/harmony-performance",
+        "./skills/harmony-devtools",
+        "./skills/harmony-testing",
+        "./skills/harmony-store-media",
+        "./skills/harmony-publish"
+      ]
+    }
+  ]
+}

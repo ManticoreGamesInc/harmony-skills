@@ -1,0 +1,9 @@
+# Keep line endings as LF for everyone, whatever their git settings: shell scripts and the eval
+# fixtures break with CRLF.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.webp binary
+*.mp4 binary
+*.zip binary

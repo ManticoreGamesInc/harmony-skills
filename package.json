@@ -1,0 +1,17 @@
+{
+  "name": "harmony-skills",
+  "private": true,
+  "description": "Agent skills for making web games and publishing them on Harmony.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check:skills": "node scripts/check_skills.mjs",
+    "check:docs": "node scripts/check_docs.mjs",
+    "test": "node skills/harmony-p2p-multiplayer/scripts/test_p2p_room.mjs skills/harmony-p2p-multiplayer/scripts/p2p_room.js",
+    "eval:triggers": "node scripts/run_evals.mjs --tag trigger --jobs 4",
+    "eval:behavior": "node scripts/run_evals.mjs --tag behavior --jobs 2",
+    "eval:fixtures": "node scripts/build_eval_fixtures.mjs"
+  }
+}

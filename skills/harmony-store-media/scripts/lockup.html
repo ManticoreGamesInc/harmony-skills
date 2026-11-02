@@ -1,0 +1,375 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+	Title lockup template for harmony-store-media. render_lockup.mjs fills in CONFIG from a JSON
+	file and renders this page to a transparent PNG with headless Chrome or Edge. Everything is
+	drawn as SVG text in the game's own font, so the spelling is always exact.
+	Sets data-status on <body> to "ok" or "error: ..." when done.
+-->
+<style id="fonts"></style>
+<style>
+html, body { margin: 0; background: transparent; overflow: hidden; }
+svg { display: block; }
+</style>
+</head>
+<body>
+<svg id="art" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+const CONFIG = /*CONFIG*/null;
+
+const DEFAULTS = {
+	title: "MY GAME",
+	lines: null,
+	tagline: "",
+	layout: "wide",
+	backing: "sign",
+	metal: "chrome",
+	bulbs: false,
+	streak: false,
+	emblem: null,
+	slant: 0,
+	font: { file: null, family: "Impact, 'Arial Black', sans-serif", weight: 900, style: "normal", stretch: "100%", letterSpacing: 0.01, wordSpacing: 0.12, uppercase: false },
+	taglineFont: { file: null, family: "'Arial Black', Arial, sans-serif", weight: 800, style: "normal", stretch: "100%", letterSpacing: 0.06, uppercase: false },
+	colors: {
+		ink: "#101828",
+		faceTop: "#fff1b8",
+		faceMid: "#ffc233",
+		faceLow: "#ff7a1a",
+		side: "#b33c0c",
+		sideDark: "#5c1a04",
+		accent: "#ff7a1a",
+		glow: "#ffd27a",
+		backingTop: "#24466b",
+		backingBottom: "#101828",
+		ribbonTop: "#5fe0d2",
+		ribbon: "#1fb5a7",
+		ribbonBottom: "#0d6f67",
+		ribbonText: "#ffffff"
+	}
+};
+
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("art");
+
+function merge(base, over) {
+	const out = Object.assign({}, base);
+	for (const k in over || {}) {
+		const v = over[k];
+		out[k] = v && typeof v === "object" && !Array.isArray(v) && base[k] && typeof base[k] === "object" ? merge(base[k], v) : v;
+	}
+	return out;
+}
+
+const cfg = merge(DEFAULTS, CONFIG);
+const c = cfg.colors;
+const square = cfg.layout === "square";
+const W = square ? 2048 : 2400;
+const H = square ? 2048 : 1300;
+svg.setAttribute("width", W);
+svg.setAttribute("height", H);
+
+function el(tag, attrs, parent) {
+	const e = document.createElementNS(NS, tag);
+	for (const k in attrs) {
+		e.setAttribute(k, attrs[k]);
+	}
+	(parent || svg).appendChild(e);
+	return e;
+}
+
+// Seeded, so the same config always renders the same sparkles.
+function makeRandom(text) {
+	let s = 1779033703;
+	for (let i = 0; i < text.length; i++) {
+		s = Math.imul(s ^ text.charCodeAt(i), 3432918353);
+	}
+	return () => {
+		s = Math.imul(s ^ (s >>> 15), s | 1);
+		s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
+		return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+	};
+}
+const random = makeRandom(cfg.title);
+
+function fontFace(name, f) {
+	if (!f.file) {
+		return "";
+	}
+	return "@font-face { font-family: '" + name + "'; src: url('" + f.file + "'); font-weight: 1 1000; font-style: " + f.style + "; font-stretch: 25% 200%; }\n";
+}
+
+function fontStack(name, f) {
+	return f.file ? "'" + name + "', " + f.family : f.family;
+}
+
+function textStyle(name, f) {
+	return "font-family: " + fontStack(name, f) + "; font-weight: " + f.weight + "; font-style: " + f.style + "; font-stretch: " + f.stretch + "; letter-spacing: " + f.letterSpacing + "em;" + (f.wordSpacing ? " word-spacing: " + f.wordSpacing + "em;" : "");
+}
+
+function caseOf(text, f) {
+	return f.uppercase ? text.toUpperCase() : text;
+}
+
+function metalStops() {
+	if (cfg.metal === "gold") {
+		return '<stop offset="0" stop-color="#fff4c2"/><stop offset="0.35" stop-color="#d9a636"/><stop offset="0.5" stop-color="#7a5212"/><stop offset="0.65" stop-color="#f2cf6b"/><stop offset="1" stop-color="#9a6b1c"/>';
+	}
+	return '<stop offset="0" stop-color="#f4f7fb"/><stop offset="0.35" stop-color="#8a97a8"/><stop offset="0.5" stop-color="#3b4656"/><stop offset="0.65" stop-color="#c9d2de"/><stop offset="1" stop-color="#5b6676"/>';
+}
+
+function defs() {
+	const d = el("defs", {});
+	d.innerHTML =
+		'<linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">' + metalStops() + '</linearGradient>' +
+		'<linearGradient id="backing" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c.backingTop + '"/><stop offset="1" stop-color="' + c.backingBottom + '"/></linearGradient>' +
+		'<linearGradient id="ribbon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c.ribbonTop + '"/><stop offset="0.5" stop-color="' + c.ribbon + '"/><stop offset="1" stop-color="' + c.ribbonBottom + '"/></linearGradient>' +
+		'<linearGradient id="streak" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="' + c.accent + '" stop-opacity="0"/><stop offset="0.7" stop-color="' + c.glow + '" stop-opacity="0.9"/><stop offset="1" stop-color="#ffffff" stop-opacity="1"/></linearGradient>' +
+		'<radialGradient id="bulb"><stop offset="0" stop-color="#fffbe8"/><stop offset="0.45" stop-color="' + c.glow + '"/><stop offset="1" stop-color="' + c.accent + '"/></radialGradient>' +
+		'<radialGradient id="comet"><stop offset="0" stop-color="#ffffff"/><stop offset="0.35" stop-color="' + c.glow + '"/><stop offset="1" stop-color="' + c.accent + '" stop-opacity="0"/></radialGradient>' +
+		'<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>' +
+		'<filter id="softglow" x="-20%" y="-80%" width="140%" height="260%"><feGaussianBlur stdDeviation="22"/></filter>' +
+		'<filter id="drop" x="-10%" y="-10%" width="130%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="#000" flood-opacity="0.6"/></filter>';
+	return d;
+}
+
+function measure(text, style, size) {
+	const t = el("text", { style: style, "font-size": size, x: 0, y: 0 });
+	t.textContent = text;
+	const w = t.getComputedTextLength();
+	t.remove();
+	return w;
+}
+
+function titleLines() {
+	const words = cfg.title.trim().split(/\s+/);
+	if (!square || !cfg.lines) {
+		return [words.join(" ")];
+	}
+	// Lines may only break between whole words, in order: a word is never split.
+	const joined = cfg.lines.map((l) => l.trim().split(/\s+/).join(" ")).join(" ");
+	if (joined !== words.join(" ")) {
+		throw new Error("lines must be the title's whole words in order: " + JSON.stringify(cfg.lines));
+	}
+	return cfg.lines.map((l) => l.trim());
+}
+
+function drawLine(text, x, y, size, style, defsEl, index, parent) {
+	const capTop = y - size * 0.74;
+	const face = "face" + index;
+	const shine = "shine" + index;
+	defsEl.insertAdjacentHTML("beforeend",
+		'<linearGradient id="' + face + '" gradientUnits="userSpaceOnUse" x1="0" y1="' + capTop + '" x2="0" y2="' + y + '"><stop offset="0" stop-color="' + c.faceTop + '"/><stop offset="0.45" stop-color="' + c.faceMid + '"/><stop offset="1" stop-color="' + c.faceLow + '"/></linearGradient>' +
+		'<linearGradient id="' + shine + '" gradientUnits="userSpaceOnUse" x1="0" y1="' + capTop + '" x2="0" y2="' + y + '"><stop offset="0" stop-color="#fff" stop-opacity="0.85"/><stop offset="0.42" stop-color="#fff" stop-opacity="0.15"/><stop offset="0.43" stop-color="#fff" stop-opacity="0"/></linearGradient>');
+	const base = { style: style, "font-size": size, x: x, y: y, "text-anchor": "middle", "stroke-linejoin": "round" };
+	function copy(attrs) {
+		const t = el("text", Object.assign({}, base, attrs), parent);
+		t.textContent = text;
+		return t;
+	}
+	// Deep extrusion: stacked copies stepping down and right, darkest at the back.
+	const depth = Math.round(size * 0.1);
+	for (let i = depth; i > 0; i--) {
+		const fill = i === depth ? "#000000" : (i > depth * 0.5 ? c.sideDark : c.side);
+		copy({ x: x + i * 0.5, y: y + i, fill: fill, stroke: c.ink, "stroke-width": size * 0.09 });
+	}
+	copy({ fill: "none", stroke: c.ink, "stroke-width": size * 0.09 });
+	copy({ fill: "none", stroke: c.faceLow, "stroke-width": size * 0.035, opacity: 0.9 });
+	copy({ fill: "url(#" + face + ")" });
+	copy({ fill: "url(#" + shine + ")" });
+	copy({ fill: "none", stroke: "#fffbe8", "stroke-width": Math.max(1.5, size * 0.008), opacity: 0.55, transform: "translate(-2,-3)" });
+}
+
+function rimPoints(shape, count) {
+	const len = shape.getTotalLength();
+	const out = [];
+	for (let i = 0; i < count; i++) {
+		out.push(shape.getPointAtLength(len * i / count));
+	}
+	return out;
+}
+
+function sign(g, box) {
+	const r = Math.min(box.h * 0.28, 160);
+	el("rect", { x: box.x - 26, y: box.y - 26, width: box.w + 52, height: box.h + 52, rx: r + 22, fill: c.ink }, g);
+	el("rect", { x: box.x - 16, y: box.y - 16, width: box.w + 32, height: box.h + 32, rx: r + 14, fill: "url(#metal)" }, g);
+	el("rect", { x: box.x, y: box.y, width: box.w, height: box.h, rx: r, fill: "url(#backing)" }, g);
+	el("rect", { x: box.x + 14, y: box.y + 14, width: box.w - 28, height: box.h - 28, rx: Math.max(4, r - 12), fill: "none", stroke: "#ffffff", "stroke-opacity": 0.12, "stroke-width": 3 }, g);
+	if (cfg.bulbs) {
+		const rim = el("rect", { x: box.x - 2, y: box.y - 2, width: box.w + 4, height: box.h + 4, rx: r + 2, fill: "none" }, g);
+		const glow = el("g", { filter: "url(#glow)", opacity: 0.9 }, g);
+		for (const p of rimPoints(rim, Math.round(rim.getTotalLength() / 62))) {
+			el("circle", { cx: p.x, cy: p.y, r: 20, fill: c.glow }, glow);
+			el("circle", { cx: p.x, cy: p.y, r: 11, fill: "url(#bulb)", stroke: c.ink, "stroke-width": 2 }, g);
+		}
+	}
+}
+
+function chamfered(x, y, w, h, k) {
+	return [[x + k, y], [x + w - k, y], [x + w, y + k], [x + w, y + h - k], [x + w - k, y + h], [x + k, y + h], [x, y + h - k], [x, y + k]].map((p) => p.join(",")).join(" ");
+}
+
+function plaque(g, box) {
+	const k = box.h * 0.22;
+	const pts = chamfered(box.x, box.y, box.w, box.h, k);
+	el("polygon", { points: pts, fill: c.ink, stroke: c.ink, "stroke-width": 52, "stroke-linejoin": "round" }, g);
+	el("polygon", { points: pts, fill: "url(#backing)", stroke: "url(#metal)", "stroke-width": 18, "stroke-linejoin": "round" }, g);
+	for (const [bx, by] of [[box.x + k * 0.9, box.y + k * 0.6], [box.x + box.w - k * 0.9, box.y + k * 0.6], [box.x + k * 0.9, box.y + box.h - k * 0.6], [box.x + box.w - k * 0.9, box.y + box.h - k * 0.6]]) {
+		el("circle", { cx: bx, cy: by, r: 13, fill: "url(#metal)", stroke: c.ink, "stroke-width": 3 }, g);
+	}
+	if (cfg.bulbs) {
+		const glow = el("g", { filter: "url(#glow)", opacity: 0.9 }, g);
+		const edge = el("polygon", { points: chamfered(box.x + 30, box.y + 30, box.w - 60, box.h - 60, k * 0.8), fill: "none" }, g);
+		for (const p of rimPoints(edge, Math.round(edge.getTotalLength() / 70))) {
+			el("circle", { cx: p.x, cy: p.y, r: 18, fill: c.glow }, glow);
+			el("circle", { cx: p.x, cy: p.y, r: 9, fill: "url(#bulb)" }, g);
+		}
+	}
+}
+
+function badge(g, box) {
+	let pts;
+	if (square) {
+		// A crest: a tall hexagon with points at the top and bottom.
+		const cx = box.x + box.w / 2;
+		const k = box.h * 0.16;
+		pts = [[cx, box.y - k], [box.x + box.w, box.y + k * 0.6], [box.x + box.w, box.y + box.h - k * 0.6], [cx, box.y + box.h + k], [box.x, box.y + box.h - k * 0.6], [box.x, box.y + k * 0.6]].map((p) => p.join(",")).join(" ");
+	} else {
+		// A slab leaning forward with the lettering.
+		const s = box.h * 0.25;
+		pts = [[box.x + s, box.y], [box.x + box.w + s, box.y], [box.x + box.w - s, box.y + box.h], [box.x - s, box.y + box.h]].map((p) => p.join(",")).join(" ");
+	}
+	el("polygon", { points: pts, fill: c.ink, stroke: c.ink, "stroke-width": 52, "stroke-linejoin": "round" }, g);
+	el("polygon", { points: pts, fill: "url(#backing)", stroke: "url(#metal)", "stroke-width": 18, "stroke-linejoin": "round" }, g);
+}
+
+function streak(g, cx, y, lineW, size) {
+	const x0 = cx - lineW * 0.48;
+	const x1 = cx + lineW * 0.4;
+	const d = "M" + x0 + " " + (y + size * 0.06) + " Q" + cx + " " + (y - size * 0.1) + " " + x1 + " " + (y - size * 0.03);
+	el("path", { d: d, stroke: "url(#streak)", "stroke-width": size * 0.11, fill: "none", filter: "url(#softglow)" }, g);
+	el("path", { d: d, stroke: "url(#streak)", "stroke-width": size * 0.03, fill: "none", "stroke-linecap": "round" }, g);
+	el("circle", { cx: x1, cy: y - size * 0.03, r: size * 0.2, fill: "url(#comet)" }, g);
+	el("circle", { cx: x1, cy: y - size * 0.03, r: size * 0.045, fill: "#ffffff" }, g);
+	for (let i = 0; i < 16; i++) {
+		el("circle", { cx: x1 - size * 0.15 - random() * lineW * 0.3, cy: y - size * 0.12 + random() * size * 0.2, r: 2 + random() * 4, fill: "#fff3c4", opacity: 0.9 }, g);
+	}
+}
+
+function ribbon(g, cx, top, size, style, chains) {
+	const text = caseOf(cfg.tagline, cfg.taglineFont);
+	const fs = size * (square ? 0.3 : 0.27);
+	const tw = measure(text, style, fs);
+	const rh = fs * 1.7;
+	const rw = tw + rh * 1.6;
+	const rx = cx - rw / 2;
+	const ry = top + (chains ? 60 : 0);
+	if (chains) {
+		for (const x of [cx - rw * 0.32, cx + rw * 0.32]) {
+			for (let j = 0; j < 4; j++) {
+				el("ellipse", { cx: x, cy: top + 4 + j * 15, rx: 6, ry: 9, fill: "none", stroke: "url(#metal)", "stroke-width": 4 }, g);
+			}
+		}
+	}
+	const n = rh * 0.35;
+	const pts = [[rx, ry + rh / 2], [rx + n, ry], [rx + rw - n, ry], [rx + rw, ry + rh / 2], [rx + rw - n, ry + rh], [rx + n, ry + rh]].map((p) => p.join(",")).join(" ");
+	el("polygon", { points: pts, fill: c.ink, stroke: c.ink, "stroke-width": 26, "stroke-linejoin": "round" }, g);
+	el("polygon", { points: pts, fill: "url(#ribbon)", stroke: "url(#metal)", "stroke-width": 7, "stroke-linejoin": "round" }, g);
+	for (const x of [rx + n * 1.3, rx + rw - n * 1.3]) {
+		el("circle", { cx: x, cy: ry + rh / 2, r: 7, fill: "url(#metal)" }, g);
+	}
+	const baseline = ry + rh / 2 + fs * 0.36;
+	const shadow = el("text", { style: style, "font-size": fs, x: cx + 3, y: baseline + 4, "text-anchor": "middle", fill: c.ink, stroke: c.ink, "stroke-width": fs * 0.12, "stroke-linejoin": "round" }, g);
+	shadow.textContent = text;
+	const front = el("text", { style: style, "font-size": fs, x: cx, y: baseline, "text-anchor": "middle", fill: c.ribbonText }, g);
+	front.textContent = text;
+}
+
+async function build() {
+	document.getElementById("fonts").textContent = fontFace("LockupTitle", cfg.font) + fontFace("LockupTagline", cfg.taglineFont);
+	const titleStyle = textStyle("LockupTitle", cfg.font);
+	const tagStyle = textStyle("LockupTagline", cfg.taglineFont);
+	if (cfg.font.file) {
+		const spec = cfg.font.style + " " + cfg.font.weight + " 100px LockupTitle";
+		await document.fonts.load(spec);
+		if (!document.fonts.check(spec)) {
+			throw new Error("the title font didn't load: " + cfg.font.file);
+		}
+	}
+	if (cfg.taglineFont.file && cfg.tagline) {
+		const spec = cfg.taglineFont.style + " " + cfg.taglineFont.weight + " 100px LockupTagline";
+		await document.fonts.load(spec);
+		if (!document.fonts.check(spec)) {
+			throw new Error("the tagline font didn't load: " + cfg.taglineFont.file);
+		}
+	}
+	const defsEl = defs();
+	const lines = titleLines().map((l) => caseOf(l, cfg.font));
+	const targetW = square ? (cfg.backing === "badge" ? 1300 : 1500) : 1700;
+	const maxSize = square ? (lines.length > 1 ? 380 : 440) : 360;
+	const widths = lines.map((l) => measure(l, titleStyle, 200));
+	const widest = Math.max(...widths);
+	const size = Math.min(maxSize, 200 * targetW / widest);
+	const lineW = widest * size / 200;
+	const cx = W / 2;
+	const lineStep = size * 0.98;
+
+	// Lay out top to bottom from y = 0; the whole group is centered at the end.
+	let y = 0;
+	let emblem = null;
+	if (cfg.emblem) {
+		const eh = square ? 560 : 300;
+		emblem = { y: y, h: eh };
+		y += eh + size * (cfg.backing === "none" ? 0.15 : 0.35);
+	}
+	const capTop = y;
+	const baselines = lines.map((l, i) => capTop + size * 0.74 + i * lineStep);
+	const lastBase = baselines[baselines.length - 1];
+	const padX = size * 0.55;
+	const box = { x: cx - lineW / 2 - padX, y: capTop - size * 0.34, w: lineW + padX * 2, h: lastBase - capTop + size * 0.34 + size * (cfg.streak ? 0.5 : 0.36) };
+	const group = el("g", { filter: "url(#drop)" });
+	const back = el("g", {}, group);
+	const front = el("g", {}, group);
+	if (cfg.backing === "sign") {
+		sign(back, box);
+	} else if (cfg.backing === "plaque") {
+		plaque(back, box);
+	} else if (cfg.backing === "badge") {
+		badge(back, box);
+	}
+	if (emblem) {
+		const ew = square ? 1100 : 700;
+		el("image", { href: cfg.emblem, x: cx - ew / 2, y: emblem.y, width: ew, height: emblem.h, preserveAspectRatio: "xMidYMax meet" }, front);
+	}
+	const titleGroup = el("g", {}, front);
+	lines.forEach((line, i) => drawLine(line, cx, baselines[i], size, titleStyle, defsEl, i, titleGroup));
+	if (cfg.slant) {
+		const mid = (capTop + lastBase) / 2;
+		titleGroup.setAttribute("transform", "translate(" + cx + "," + mid + ") skewX(" + (-cfg.slant) + ") translate(" + (-cx) + "," + (-mid) + ")");
+	}
+	if (cfg.streak) {
+		streak(front, cx, lastBase + size * 0.2, lineW, size);
+	}
+	if (cfg.tagline) {
+		const top = cfg.backing === "none" ? lastBase + size * (cfg.streak ? 0.45 : 0.3) : box.y + box.h + (cfg.backing === "badge" && square ? box.h * 0.2 : 16);
+		ribbon(front, cx, top, size, tagStyle, cfg.backing === "sign");
+	}
+
+	// Center the art and shrink it if it would run off the canvas.
+	const bb = group.getBBox();
+	const margin = 80;
+	const s = Math.min(1, (W - margin * 2) / bb.width, (H - margin * 2) / bb.height);
+	group.setAttribute("transform", "translate(" + (W / 2) + "," + (H / 2) + ") scale(" + s + ") translate(" + (-(bb.x + bb.width / 2)) + "," + (-(bb.y + bb.height / 2)) + ")");
+}
+
+build().then(() => {
+	document.body.dataset.status = "ok";
+}).catch((e) => {
+	document.body.dataset.status = "error: " + e.message;
+	const t = el("text", { x: 40, y: 120, "font-size": 60, fill: "#ff2040", style: "font-family: sans-serif" });
+	t.textContent = "error: " + e.message;
+});
+</script>
+</body>
+</html>
