@@ -114,8 +114,9 @@ Cut first if time runs out: <feature>.
 - <Vite + TypeScript / engine>, <libraries>. Tests: <yes / no>. Dev tools: <yes / no>.
 
 ## Store page
-- Pitch: <one line>. Tag kinds: <genre, play style, mood>. Platforms: <PC, Mobile, ...>, each
+- Pitch: <one line>. Tag kinds: <genre, mood or art style>. Platforms: <PC, Mobile, ...>, each
   played start to finish on a device under "Tested on".
+- Players: <Single player, Local multiplayer, Online multiplayer, Co-op: every one that applies>.
 
 ## Open questions
 - <None, or each one with the assumption used until it's answered.>

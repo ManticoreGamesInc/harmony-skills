@@ -127,8 +127,13 @@ build. It shows how the game reacts; only a web build shows the real SDK.
   15 seconds the console shows the bridge's warning that Harmony isn't available, and the game
   plays on. A browser smoke test of that build (the
   harmony-testing skill covers one) catches regressions.
+- With the bridge, to try it against the SDK in a local web build, swap the loader tag in the
+  served build's `index.html` for `https://cdn.playharmony.ai/v1/fake-loader.js`. The bridge then
+  attaches to Harmony's fake: the real SDK with bot friends and chat, and no sign-in. It needs
+  a network connection, and the overlay shows `fake`. Swap `loader.js` back before you package,
+  and check the zipped `index.html` loads `loader.js`. The engine's editor fake stays as it is.
 - Finally, upload it and play it on Harmony, where the overlay appears and, with the bridge,
-  the real SDK runs.
+  the real SDK runs with real sign-in.
 
 ## Reference files
 

@@ -9,6 +9,7 @@ Vitest; Jest and `node:test` work the same way.
 - Fixed-step simulation and replays
 - Saves and settings
 - Fuzzing inputs
+- Harmony SDK code
 
 ## Seeded randomness
 
@@ -98,3 +99,51 @@ Anything that comes from outside the game (an imported file, a peer's message, a
 parameter) gets a test that throws random and hostile data at the parser: random bytes, deep
 nesting, very long strings, wrong types. The parser returns a safe result or a clear refusal,
 and never throws.
+
+## Harmony SDK code
+
+Only for a game that uses the Harmony SDK (`@playharmony/sdk`); most don't, and need nothing
+here. Test the game's Harmony code against the SDK's fake: the real SDK with a simulated backend
+of bot friends and chat, and no sign-in. Don't write a mock or stub of the SDK.
+
+`loadFakeGameServices` from `@playharmony/sdk/testing` downloads the fake into the test and
+returns its `attach`. The test runs in a DOM emulation such as jsdom, needs a network
+connection, and the download can take up to 30 seconds, so raise the hook's timeout. Import it
+only from test files, never from game code.
+
+```
+npm install --save-dev jsdom
+```
+
+```ts
+// @vitest-environment jsdom
+// tests/harmony.test.ts
+import { beforeAll, expect, test } from "vitest";
+import { loadFakeGameServices } from "@playharmony/sdk/testing";
+
+let attachFake: Awaited<ReturnType<typeof loadFakeGameServices>>;
+
+// The fake downloads once for the file. Allow 90 seconds for it.
+beforeAll(async () => {
+  attachFake = await loadFakeGameServices();
+}, 90_000);
+
+test("the game attaches to Harmony", async () => {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const harmony = await attachFake({ gameId: "YOUR_GAME_ID", container });
+  expect(harmony.isOpen()).toBe(false);
+  harmony.detach();
+});
+```
+
+- The `// @vitest-environment jsdom` comment, at the top of the file, runs this one file in jsdom, so the rule tests stay
+  in Node. To run every test in jsdom instead, set `environment: "jsdom"` in the `test` block of
+  the Vitest config.
+- Write the game's Harmony code so it takes the handle from outside (the value `attach`
+  resolves to in the game), then pass it the handle from `attachFake` in the test: for example,
+  that the game pauses when the overlay opens, or keys a save on the session's `accountId`.
+- Call `harmony.detach()` at the end of each test, so the next one starts clean.
+- Use the Game ID the game passes to `attach`, or the placeholder `YOUR_GAME_ID` if it doesn't
+  have one yet.
+- The harmony-sdk skill lists every call the handle has and what each one returns.

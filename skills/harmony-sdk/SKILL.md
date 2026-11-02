@@ -158,11 +158,15 @@ Load Harmony's loader first in `<head>`, then attach through the `PlayHarmony` g
 </script>
 ```
 
+While developing, the page loads the fake loader in place of this one: see [Test with the fake](#test-with-the-fake).
+
 ### For both
 
 - `gameId` is the Game ID from the game's page in My Creations on Harmony. Ask the developer for it. Never invent one.
-- `container` is the element the game draws in, such as its canvas or the element around it. It must be in the page when you attach.
+- `container` is the element the game runs in, in this page: a wrapper around the game, or its canvas. Never `document.body` or `<html>`, so a full-page game needs a wrapper of its own. It must be in the page when you attach.
 - Attach as the page loads, not after a title screen or menu, since a sign-in returns to the game's page to finish. If the canvas comes later, attach to a wrapper element that is in the page from the start, and put the title screen and canvas inside it.
+- Import the SDK before any code that changes the page's address, such as a client-side router: sign-in returns to the address the game started at.
+- Keep the handle as it is. The handle and its `auth`, `friends` and `files` are frozen: don't add fields to it, and keep it out of stores that wrap objects in deep proxies, such as Solid's `createStore` or MobX's `observable`.
 - Call `harmony.detach()` when the game shuts down. The handle does nothing after that.
 
 ## Show text from Harmony as text, never as HTML
@@ -182,25 +186,42 @@ See [references/showing-text.md](references/showing-text.md) for examples in pla
 - **Sign in from a player action.** To offer sign-in from the game's own button, call `harmony.auth.signIn()` from the player's click or key press, since it may open a window. It resolves with the session sign-in ends in, so check its `kind`.
 - **Guests have no friends list.** Check that `session.kind` is `"account"` before calling `friends.list` or showing friends; otherwise it rejects with `"guest_not_allowed"` (a guest) or `"not_signed_in"`. For a guest, show the game without friends, and offer a sign-in button that calls `harmony.auth.signIn()`.
 - **Names are not unique.** Two players can share a display name. Key everything on `accountId`, and show the 4-character `discriminator` tag beside the name where players need telling apart. The tag is never part of `displayName`.
-- **Check the session kind.** `auth.getSession()` returns a session whose `kind` is `"account"`, `"guest"` or `"signedOut"`. Treat any other kind as signed out. Only account and guest sessions have `accountId`, `displayName` and the other fields.
+- **Check the session kind.** `auth.getSession()` returns a session whose `kind` is `"account"`, `"guest"`, `"signedOut"`, or `"legalRequired"` while the player accepts updated terms in the overlay. Treat any kind but `"account"` and `"guest"` as not signed in. Only account and guest sessions have `accountId`, `displayName` and the other fields.
+- **Every call can fail.** Besides the codes its own section in [references/api.md](references/api.md) names, any call can reject with the `code` `"invalid_params"`, `"not_connected"`, `"unknown_method"` or `"internal"`. Wrap calls so the game keeps playing without Harmony's features, and branch on `error.code`, never on the message.
 - **A guest keeps their id.** A guest who creates an account keeps the same `accountId`, so their saves carry over. Listen with `auth.onSessionChanged` to load the right player's saves when someone signs in or out.
 - **Harmony doesn't store game data.** Keep progress in `localStorage` or `IndexedDB`, keyed on `accountId`, so each player on a device has their own. It stays in that browser on that device. Saves there belong to the game alone: no other game can read them.
 - **Pause while the overlay is open.** Use `harmony.on("open", …)` and `harmony.on("close", …)`. They fire however the overlay opened, including the player's Shift+Tab. The overlay releases pointer lock when it opens, so a game that locks the pointer locks it again from `harmony.on("close", …)` or on the player's next click.
+- **The game gets no input while the overlay is open.** The SDK stops keyboard and pointer input before the game's listeners see it, and a click on the game closes the overlay. A key the player was holding still gets its `keyup`. The one exception is a capture listener on `window` that the game added before attaching: it should return early while `harmony?.isOpen()` is true, and not cancel keys, or typing in the overlay loses characters.
 - **Don't fight the overlay's hotkey.** Shift+Tab opens the overlay by default. If the game uses Shift+Tab, pass a different `hotkey` to `attach`, or `null` to turn it off and open the overlay from the game's own button.
 - **File dialogs need a player action.** Call `files.save` and `files.open` from a click or key handler. Called at any other time, a first save downloads the file instead, and an open fails. Firefox and Safari have no save dialog, so there a save always downloads. Handle the `"cancelled"` and `"downloaded"` outcomes, and catch rejections: each has a `code` (`"no_user_activation"`, `"busy"`, `"file_not_found"`, `"file_too_large"` and others) listed in [references/api.md](references/api.md).
 - **Check files the player opens.** The player can pick any file. Validate `data` before using it, and show its `name` as text.
 - **Use `currentGame` only for display.** Creators write game titles freely. Never compare a friend's `currentGame` to decide whether they are in your game.
 - **Compare `currentGameId` to find friends in your game.** A friend whose `currentGameId` equals the game's own `gameId` is in it. When `currentGameId` is absent, Harmony doesn't know: treat it as unknown, never as a different game.
 - **Every listener returns a stop function.** Call it when the screen or component that listens goes away.
+- **No call reports the SDK's version.** It is in the browser console on every attach, and in the overlay's About dialog, opened from the Harmony mark in its header.
+
+## Test with the fake
+
+While the developer works on the game, it attaches to the fake: the real SDK with a simulated backend of bot friends and chat, and no sign-in. It downloads like the real SDK, so it needs a network connection. The overlay shows `fake` at the bottom of its panel. The release build attaches to the real Harmony. Develop and test against the fake; don't write a mock of the SDK.
+
+- **With the package,** the bundler's development build picks the fake on its own: Vite's dev server, webpack's `--mode development`, esbuild with `--conditions=development`. Parcel needs package exports turned on, and Rollup the `development` export condition. `vite build` is a release build.
+- **With a script tag,** load `https://cdn.playharmony.ai/v1/fake-loader.js` in place of `https://cdn.playharmony.ai/v1/loader.js` while developing, and swap the real loader back before the game ships.
+- **Automated tests** in a DOM emulation such as jsdom use `loadFakeGameServices` from `@playharmony/sdk/testing`, which downloads the fake and returns its `attach`. Import it only from test files, and raise the hook's timeout, since the download can take up to 30 seconds. See "Testing with the fake" in [references/api.md](references/api.md); the harmony-testing skill covers the rest of a game's tests.
+
+## Theme the overlay
+
+The overlay uses Harmony's light theme by default. To match it to the game's palette, set the `--mtc-*` CSS custom properties on an ancestor of the container: see "Theming the overlay" in [references/api.md](references/api.md).
 
 ## Check your work
 
-- Run the game outside Harmony (a local dev server). It starts and plays at once, and every Harmony feature copes with `harmony` being `null`: hidden, or replaced by a fallback.
+- Run the dev server, or the page with the fake loader. The game starts at once, the overlay shows `fake`, and each feature works with the fake: the name, the bot friends, pausing when the overlay opens, any file dialogs.
+- Run the release build locally (with Vite, `vite build` then `vite preview`), with the real loader for a script tag. Harmony isn't there, so the game must start and play on without it, and every Harmony feature copes with `harmony` being `null`: hidden, or replaced by a fallback.
 - Search the code for the patterns in "Reviewing a game" in [references/showing-text.md](references/showing-text.md).
 - Check every SDK call against [references/api.md](references/api.md), and, with the package, that the game has the latest SDK version (`npm outdated @playharmony/sdk` lists nothing).
-- The real SDK runs only on Harmony. After upload, test as a guest and with an account: the name, friends, pausing on Shift+Tab, and any file dialogs.
+- With a script tag, check the page loads `loader.js`, not `fake-loader.js`, before the game is uploaded.
+- The fake has no sign-in, so sign-in is tested on Harmony. After upload, test as a guest and with an account: the name, friends, pausing on Shift+Tab, and any file dialogs.
 
-When you finish, tell the developer which features you added (or that the game doesn't need the SDK), the SDK version installed, that they should update it when a new one comes out, whether the Game ID is still a placeholder, and what to test on Harmony.
+When you finish, tell the developer which features you added (or that the game doesn't need the SDK), the SDK version installed (with a script tag, the console shows it on attach), that they should update it when a new one comes out, whether the Game ID is still a placeholder, and what to test on Harmony.
 
 ## Upload to Harmony
 
