@@ -116,7 +116,7 @@ startGame();
 ```
 
 A game with no build step loads Harmony with a script tag, and `PlayHarmony.attach` there
-can return a promise while the SDK loads. Use `Promise.resolve(PlayHarmony.attach())` (sdk.md shows how), run the same steps on the resolved handle, and use `"device"` if it fails.
+returns a promise of the handle. Use `PlayHarmony.attach().then(...)` (sdk.md shows how), run the same steps on the resolved handle, and use `"device"` if it fails.
 
 When the round ends and `save` is still `null`, push the result onto `heldResults` and show the
 results screen without the totals. Without the SDK, `save` is set before the first round, so
