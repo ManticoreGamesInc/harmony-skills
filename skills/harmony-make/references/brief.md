@@ -101,7 +101,7 @@ Cut first if time runs out: <feature>.
 ## Harmony
 - SDK: <None: Harmony adds its overlay at upload / the features used: player name, friends,
   overlay button, pause on overlay, file dialogs>.
-- Game ID: <not needed (no SDK) / known / ask at the SDK step>.
+- Game ID: <not needed (hosted game, fake or no SDK) / standalone real game: known or ask at the SDK step>.
 
 ## Accessibility and languages
 - <Options>. Nothing relies on color or sound alone.

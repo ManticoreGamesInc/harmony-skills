@@ -216,9 +216,7 @@ Ask:
 
 - Does the game need any of the SDK's features? Recommended: none, unless the design calls for
   one; say which and why.
-- Only if it does: does the developer have the game's Game ID yet (from its page in My
-  Creations)? It can wait until the build reaches the SDK. A game without the SDK needs no
-  Game ID.
+- Only for a standalone real game using the SDK: does the developer have its Game ID from My Creations? It can wait until the build reaches the SDK. Hosted games and the fake attach without options.
 
 ## 14. Accessibility and languages
 

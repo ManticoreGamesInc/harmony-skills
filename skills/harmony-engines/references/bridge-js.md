@@ -15,12 +15,12 @@ go back to the engine as JSON strings, so every engine can read them. The engine
 ## The file
 
 Name it after the game (`star-hopper-services.js`), set the container id for the engine, and ask
-the developer for the Game ID; never invent one. It is a plain script with no imports: Harmony's
+the developer for the Game ID only for standalone real games; hosted games and the fake need no options. It is a plain script with no imports: Harmony's
 loader script provides the SDK as the `PlayHarmony` global, so nothing needs bundling.
 
 ```js
 (function () {
-  const GAME_ID = "YOUR_GAME_ID";
+  const GAME_ID = ""; // Hosted games and the fake need no ID; set it for standalone real games.
   const GAME_NAME = "Star Hopper";
   // The element the game draws in: Unity's Default template has "unity-container", its Minimal
   // template only "unity-canvas"; Godot uses "canvas". Falls back to the first canvas on the page.
@@ -92,15 +92,16 @@ loader script provides the SDK as the `PlayHarmony` global, so nothing needs bun
 
   function attach() {
     const container = document.getElementById(CONTAINER_ID) ?? document.querySelector("canvas");
-    whenHarmonyLoads(LOAD_TIMEOUT_MS).then((harmonySdk) => {
+    whenHarmonyLoads(LOAD_TIMEOUT_MS).then(async (harmonySdk) => {
       if (!harmonySdk) {
         unavailable("Harmony's loader didn't load");
         return;
       }
       let handle = null;
       try {
-        // From the script tag, attach returns the handle itself, not a promise.
-        handle = harmonySdk.attach({ gameId: GAME_ID, container, gameInfo: { name: GAME_NAME } });
+        // The loader may return a promise before the SDK finishes loading.
+        const options = GAME_ID === "" ? undefined : { gameId: GAME_ID, container, gameInfo: { name: GAME_NAME } };
+        handle = await Promise.resolve(harmonySdk.attach(options));
       } catch (error) {
         unavailable(error);
         return;
@@ -165,8 +166,7 @@ loader script provides the SDK as the `PlayHarmony` global, so nothing needs bun
             displayName: displayText(f.displayName),
             discriminator: displayText(f.discriminator),
             online: f.online,
-            currentGame: displayText(f.currentGame),
-            currentGameId: f.currentGameId ?? "",   // empty means unknown, never a different game
+            playingSameGame: f.playingSameGame,
           })),
         }),
         (error) => emit({ type: "friendsFailed", reason: error?.code ?? "error" }),
@@ -239,16 +239,14 @@ shapes:
 | `unavailable` | | Harmony's loader didn't load in time, or attaching failed; the game plays on without Harmony |
 | `session` | `kind` (`signedOut`, `guest`, `account`), `accountId`, `displayName`, `discriminator` | At start, whenever the player signs in, signs out or a guest creates an account, and when `signIn` ends |
 | `overlay` | `open` | The overlay opened or closed, however it happened |
-| `friends` | `friends`: `accountId`, `displayName`, `discriminator`, `online`, `currentGame`, `currentGameId` | After `requestFriends`, for an account |
+| `friends` | `friends`: `accountId`, `displayName`, `discriminator`, `online`, `playingSameGame` | After `requestFriends`, for an account |
 | `friendsFailed` | `reason`: sdk.md's codes `guest_not_allowed` and `not_signed_in`, or `unavailable` without Harmony | After `requestFriends` for a guest or signed-out player, or when it fails |
 | `fileSaved` | `outcome` (`saved`, `downloaded`, `cancelled`, `failed`, `unavailable`); `code` when `failed` (sdk.md's codes, such as `no_user_activation`, `busy`, `file_too_large`) | After `saveFile` |
 | `fileOpened` | `outcome` (`opened`, `cancelled`, `tooBig`, `failed`, `unavailable`), `name`, `base64`; `code` when `failed` | After `openFile` |
 
 Names, game titles and file names are text written by players and creators. The file cleans them
 for display (no control or invisible characters, at most 64 characters), and the engine still
-shows them with rich text off. `currentGame` is for showing only; to tell whether a friend is in this game,
-compare `currentGameId` with the Game ID. An empty `currentGameId` means Harmony doesn't know the
-friend's game, never that it is a different one.
+shows them with rich text off. `playingSameGame` reports whether a friend is visibly playing this game; titles and other activity stay inside the overlay.
 
 ## Loading it
 
@@ -263,8 +261,7 @@ First in the page's `<head>`:
 
 - Copy the loader tag exactly: its URL is permanent. Keep it a plain script, first in `<head>`,
   with no `async`, `defer`, `type="module"` or `integrity`.
-- `PlayHarmony.attach` returns the handle itself, not a promise: never `await` it. The engine
-  starts without waiting for Harmony, and the bridge plays on without it after the timeout.
+- Normalize `PlayHarmony.attach` with `Promise.resolve`: the loader can return a promise before the SDK loads. The bridge waits for that result while the engine starts without waiting for Harmony.
 - The engine reference says where these tags go (Unity's WebGL template, Godot's Head Include)
   and how the file reaches the build folder.
 - The loader serves the current SDK, so the game stays on the latest version without a rebuild.

@@ -4,7 +4,7 @@ Every public call in `@playharmony/sdk`, for games that use the SDK. Most games 
 
 Use only the calls listed here. Anything else in the package is internal and can change in any release. Friend requests, chat and account changes happen in the overlay: open it with `harmony.open()` rather than building screens for them.
 
-The examples call the handle `harmony`: the value `attach` resolves to, or that `PlayHarmony.attach` returns. Until it is set, and if it never is, `harmony` is `null`, so code that can run earlier checks it first. Names such as `game`, `nameLabel` or `showToast` stand for the game's own code.
+The examples call the handle `harmony`: the value `attach` or `Promise.resolve(PlayHarmony.attach())` resolves to. Until it is set, and if it never is, `harmony` is `null`, so code that can run earlier checks it first. Names such as `game`, `nameLabel` or `showToast` stand for the game's own code.
 
 ## Contents
 
@@ -22,18 +22,18 @@ The examples call the handle `harmony`: the value `attach` resolves to, or that 
 ## attach
 
 ```ts
-attach(options: AttachOptions): Promise<GameServicesHandle>
+attach(options?: AttachOptions): Promise<GameServicesHandle>
 ```
 
-Connects the game to Harmony, adds the overlay over the game's container, and resolves to the handle. Call it once, as the page loads, on an element that is in the page from the start, such as one around the title screen and canvas. Start the game without waiting for it: don't `await` it before the game starts, or at the top level of a module. In the window a player signs in through, the promise never settles. When Harmony can't start, it rejects, which can take a while. Catch it, and let the game play on without Harmony's features.
+Connects the game to Harmony, adds the overlay over the game's container, and resolves to the handle. Call it once, as the page loads. Hosted games and the fake can call `attach()` without options. Standalone real games require `gameId` and `container`. Start the game without waiting for it: don't `await` it before the game starts, or at the top level of a module. In the window a player signs in through, the promise never settles. When Harmony can't start, it rejects, which can take a while. Catch it, and let the game play on without Harmony's features.
 
 Import the SDK before any code that changes the page's address, such as a client-side router: sign-in returns to the address the game started at.
 
 | Option | Type | Meaning |
 | --- | --- | --- |
-| `gameId` | `string` | The game's Game ID, from its page in My Creations. Required. |
-| `container` | `HTMLElement` | The element the game runs in, in this page: a wrapper around the game, or its canvas. Not `body` or `html`, so a full-page game needs a wrapper of its own. The overlay covers it. Required. |
-| `gameInfo` | `{ name?: string }` | The game's name, which labels its chat channel. |
+| `gameId` | `string` | The game's Game ID. Required only for standalone real games; hosted games use host metadata and the fake supplies a development ID. |
+| `container` | `HTMLElement` | The canvas or wrapper. Hosted games and the fake default to the document; standalone real games require a connected wrapper or canvas, never `body` or `html`. |
+| `gameInfo` | `{ name?: string }` | Display metadata for standalone and fake games; ignored in hosted games, which use their backend listing. |
 | `hotkey` | `{ key, shift?, ctrl?, alt?, meta? } \| null` | The key that opens and closes the overlay, matched against `KeyboardEvent.key`. Shift+Tab by default. `null` turns it off. |
 | `badgeCorner` | `"bottom-right" \| "bottom-left" \| "top-right" \| "top-left"` | The corner of the game the overlay's badge sits in. Bottom right by default. |
 
@@ -47,17 +47,11 @@ The promise rejects with a `code`:
 ```ts
 import { attach, type GameServicesHandle } from "@playharmony/sdk";
 
-// In the page from the start, around the title screen and canvas.
-const container = document.getElementById("game") as HTMLElement;
-
+// Hosted games and the fake need no options.
 // Set once Harmony is ready. Stays null if it can't start.
 let harmony: GameServicesHandle | null = null;
 
-attach({
-  gameId: "YOUR_GAME_ID",
-  container,
-  gameInfo: { name: "Star Hopper" },
-})
+attach()
   .then((handle) => {
     harmony = handle;
     // onHarmonyReady is your own: read the session, listen to the overlay.
@@ -75,10 +69,10 @@ startGame();
 ## PlayHarmony.attach, from a script tag
 
 ```ts
-PlayHarmony.attach(options: AttachOptions): GameServicesHandle
+PlayHarmony.attach(options?: AttachOptions): GameServicesHandle | Promise<GameServicesHandle>
 ```
 
-A game with no build step loads Harmony with a script tag instead of the package, and attaches through the `PlayHarmony` global. `PlayHarmony.attach` takes the same options as `attach` and returns the handle itself, not a promise.
+A game with no build step loads Harmony with a script tag instead of the package, and attaches through the `PlayHarmony` global. `PlayHarmony.attach` is available immediately after the loader. It takes the same options as `attach`; it returns a promise while the SDK loads, or a handle when already loaded. Normalize either result with `Promise.resolve` and catch failures.
 
 - Put the loader first in `<head>`. It can arrive after the game's own script, so wait for `window.PlayHarmony`, and give up after a while so the game plays on without it.
 - A sign-in window returns to the game's page to finish sign-in. There `window.__MANTICORE_AUTH_RETURN__` is set: don't start the game in that window.
@@ -88,51 +82,21 @@ A game with no build step loads Harmony with a script tag instead of the package
 <!-- First in <head>: -->
 <script src="https://cdn.playharmony.ai/v1/loader.js"></script>
 
-<!-- At the end of <body>, after the game's element exists. This can also go in the game's own script file. -->
+<!-- At the end of <body>, after the game's element exists. startGame is your own. -->
 <script>
-  const gameRoot = document.getElementById("game");
-
-  // Set once Harmony is ready. Stays null if it can't start.
-  let harmony = null;
-
-  // Resolves with the PlayHarmony global once the loader has run, or null after timeoutMs.
-  function whenHarmonyLoads(timeoutMs) {
-    return new Promise((resolve) => {
-      const startedAtMs = performance.now();
-      (function poll() {
-        if (window.PlayHarmony) {
-          return resolve(window.PlayHarmony);
-        }
-        if (performance.now() - startedAtMs > timeoutMs) {
-          return resolve(null);
-        }
-        setTimeout(poll, 50);
-      })();
-    });
-  }
-
   // A sign-in window returning to this page finishes sign-in; it doesn't start the game.
   if (!window.__MANTICORE_AUTH_RETURN__) {
-    // startGame is your own. It runs now, without waiting for Harmony.
     startGame();
-    whenHarmonyLoads(15000).then((PlayHarmony) => {
-      if (!PlayHarmony) {
-        console.warn("Harmony is not available");
-        return;
-      }
-      try {
-        harmony = PlayHarmony.attach({
-          gameId: "YOUR_GAME_ID",
-          container: gameRoot,
-          gameInfo: { name: "Star Hopper" },
-        });
-        // onHarmonyReady is your own: read the session, listen to the overlay.
-        onHarmonyReady(harmony);
-      } catch (error) {
-        // The game plays on without Harmony's features.
-        console.warn("Harmony is not available", error);
-      }
-    });
+    try {
+      Promise.resolve(PlayHarmony.attach()).then(
+        (harmony) => {
+          // Read the session and subscribe to the overlay here.
+        },
+        (error) => console.warn("Harmony is not available", error),
+      );
+    } catch (error) {
+      console.warn("Harmony is not available", error);
+    }
   }
 </script>
 ```
@@ -302,7 +266,7 @@ Harmony doesn't store game data. Keep progress in `localStorage` or `IndexedDB`,
 ### harmony.auth.getSession
 
 ```ts
-harmony.auth.getSession(): Promise<AuthSession>
+harmony.auth.getSession(): Promise<PlayerSession>
 ```
 
 The player's session now. Its `kind` is `"account"` for a Harmony account, `"guest"` for a guest, `"signedOut"`, or `"legalRequired"` while the player accepts updated terms in the overlay. Treat any kind but `"account"` and `"guest"` as not signed in. A guest or account session also has:
@@ -326,7 +290,7 @@ if (session.kind === "guest" || session.kind === "account") {
 ### harmony.auth.signIn
 
 ```ts
-harmony.auth.signIn(): Promise<AuthSession>
+harmony.auth.signIn(): Promise<PlayerSession>
 ```
 
 Starts sign-in in the overlay and resolves with the session it ends in. It may open a window, so call it from the player's click or key press. Check the session's `kind`, as for `getSession`.
@@ -351,7 +315,7 @@ signInButton.addEventListener("click", async () => {
 ### harmony.auth.onSessionChanged
 
 ```ts
-harmony.auth.onSessionChanged(listener: (session: AuthSession) => void): () => void
+harmony.auth.onSessionChanged(listener: (session: PlayerSession) => void): () => void
 ```
 
 Calls the listener with the whole new session each time it changes: the player signs in, signs out, or a guest creates an account. Returns a function that stops listening.
@@ -394,8 +358,7 @@ The player's friends. Each friend has:
 | `displayName` | `string` | The name to show, as for the player. Not unique. |
 | `discriminator` | `string \| null` | The 4-character tag beside the name. |
 | `online` | `boolean` | Whether the friend is online now. |
-| `currentGame` | `string \| null` | The title of the game they are playing, to show only. Creators write titles freely, so a title can hold any character, such as `<` or `&`. Show it as text, never as HTML. Never compare it to decide whether they are in your game. |
-| `currentGameId` | `string \| undefined` | The Game ID of the game they are in, when Harmony knows it. Compare it with your own `gameId` to tell whether they are in your game. Absent means unknown, never a different game. |
+| `playingSameGame` | `boolean` | Whether the friend is visibly playing your authenticated game. Game titles and other activity stay in the overlay. |
 
 It rejects with a `code` when there is no list to give. Show the game without friends then.
 
@@ -405,7 +368,7 @@ It rejects with a `code` when there is no list to give. Show the game without fr
 | `"not_signed_in"` | No one is signed in. |
 
 ```ts
-// statusLabel is your own element, and GAME_ID the Game ID the game passes to attach.
+// statusLabel is your own element.
 // Call this only for an account session: guests have no friends list.
 try {
   const friends = await harmony.friends.list();
@@ -413,7 +376,7 @@ try {
     return friend.online;
   });
   const here = friends.filter((friend) => {
-    return friend.currentGameId === GAME_ID;
+    return friend.playingSameGame;
   });
   statusLabel.textContent = `${online.length} of ${friends.length} friends online, ${here.length} in this game`;
 } catch {
@@ -431,10 +394,10 @@ Calls the listener with a friend's whole, current entry each time they come onli
 
 ```ts
 // showToast is your own, and sets the toast's textContent. forLabel drops control and invisible
-// characters and caps the length (see showing-text.md), since a title can be long or hold a newline.
+// characters and caps the length (see showing-text.md).
 const stopWatching = harmony.friends.onPresenceChanged((friend) => {
-  if (friend.online && friend.currentGame) {
-    showToast(`${forLabel(friend.displayName)} is playing ${forLabel(friend.currentGame)}`);
+  if (friend.playingSameGame) {
+    showToast(`${forLabel(friend.displayName)} is playing this game`);
   }
 });
 ```

@@ -68,7 +68,7 @@ The screens and flow a player expects:
 - The Harmony SDK, only if the brief's Harmony section lists SDK features; skip this step when it
   says none. Attach at start without waiting, and the game plays on without it (`harmony-sdk` has
   the details, from Harmony's SDK docs at https://playharmony.ai/developers/sdk.md). Ask for the
-  Game ID now if the brief says "ask at the SDK step"; never invent one.
+  Game ID only for a standalone real game if the brief says "ask at the SDK step"; never invent one.
 
 Done when: a player can open the game, learn it, play, pause, change settings and play again,
 without anything unfinished in the way.
@@ -134,7 +134,7 @@ developer has the handover:
 - the package, listing and store media paths;
 - the command that runs the game locally;
 - every difference from the brief, and the brief's "later" list;
-- anything still assumed: `(assumed)` lines nobody confirmed, and, for a game that uses the SDK,
+- anything still assumed: `(assumed)` lines nobody confirmed, and, for a standalone real game that uses the SDK,
   the Game ID if it's still a placeholder.
 
 ## Checks at every stage

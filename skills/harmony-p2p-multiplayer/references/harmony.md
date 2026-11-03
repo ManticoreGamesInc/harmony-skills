@@ -31,14 +31,10 @@ change a call, so where this file and those docs differ, follow the docs.
 - **No invite or room API.** The game can't send chat messages, invites or friend requests,
   with or without the SDK. The overlay handles those. Players share the room code themselves.
 - **Friends are read only, and only with the SDK.** With an account session,
-  `harmony.friends.list()` gives the player's friends with `online`, `currentGame` and
-  `currentGameId`. It rejects with `guest_not_allowed` for a guest and `not_signed_in` when no
+  `harmony.friends.list()` gives the player's friends with `online` and `playingSameGame`. It rejects with `guest_not_allowed` for a guest and `not_signed_in` when no
   one is signed in; show the room panel without friends then. The list is enough for a hint
   ("3 friends online, 1 in this game") on the room panel. It isn't a way to find or join a room.
-- **Use `currentGameId` to tell who is in your game.** Compare it with your own Game ID. When
-  it is absent, Harmony doesn't know, so count that friend as unknown, not as in another game.
-- **`currentGame` is display text.** Creators write game titles freely. Never compare it to
-  decide whether a friend is in your game, and show it as text, never HTML.
+- **Use `playingSameGame` to tell who is visibly in your game.** It does not identify a multiplayer room. Game titles and other activity stay inside the overlay.
 - **Signaling and TURN are yours.** The free public PeerJS server is fine for testing. For a
   launch, run your own (`self_hosting.md`).
 
