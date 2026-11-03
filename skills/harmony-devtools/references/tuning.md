@@ -141,9 +141,11 @@ function tuningWriter(): Plugin {
       const file = join(server.config.root, "src", "tuning.json");
       server.middlewares.use("/__dev/tuning", (request, response) => {
         // Only the game's own page may save: any other site open in the browser could otherwise
-        // send a request to localhost and overwrite the file.
+        // send a request to localhost and overwrite the file. The Host must be this machine too,
+        // so a site that points its own name at 127.0.0.1 (DNS rebinding) is refused.
         const host = request.headers.host ?? "";
-        const fromOwnPage = request.headers.origin === "http://" + host || request.headers.origin === "https://" + host;
+        const localHost = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host);
+        const fromOwnPage = localHost && (request.headers.origin === "http://" + host || request.headers.origin === "https://" + host);
         if (request.method !== "POST" || !fromOwnPage || request.headers["content-type"] !== "application/json") {
           response.statusCode = 403;
           response.end();
@@ -191,9 +193,17 @@ async function saveTuning(): Promise<void> {
 }
 ```
 
-- The writer only accepts JSON from the game's own page (its `Origin` matches the dev server), in
-  the same shape as the current file, and writes only that one file. A web page on another site
-  can't send a JSON request to it without the browser asking the server first, which it refuses.
+- The writer only accepts JSON from the game's own page (its `Origin` matches the dev server,
+  whose `Host` is `localhost`, `127.0.0.1` or `[::1]`), in the same shape as the current file,
+  and writes only that one file. A web page on another site can't send a JSON request to it
+  without the browser asking the server first, which it refuses, and a site that rebinds its
+  own name to this machine fails the `Host` check. Recent Vite versions check the `Host` too,
+  but not with `server.https` or `allowedHosts: true`, and older ones not at all, so the plugin
+  checks it itself.
+- The file path is fixed in the plugin. Never build it from the request's URL, body or a query
+  parameter, so nothing can write outside `tuning.json` (`../`).
+- `sameShape` compares keys with the current file, so a body with extra keys (`__proto__`,
+  `constructor`) is refused before anything is written.
 - The dev server listens on `localhost` by default. Don't expose it on the network (`--host`)
   while the writer is on.
 - The file only changes in the project; commit it like any other source change.

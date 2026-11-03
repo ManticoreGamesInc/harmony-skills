@@ -14,9 +14,15 @@ export function createGame(width, height) {
     orbs: [],
     comets: [],
     score: 0,
-    best: Number(localStorage.getItem("orb-dash.best") ?? 0),
+    best: loadBest(),
     cometTimer: 0,
   };
+}
+
+// The saved best can be missing, edited or junk: keep it only if it is a whole number in range.
+function loadBest() {
+  const best = Number(localStorage.getItem("orb-dash.best"));
+  return Number.isInteger(best) && best >= 0 && best <= 1_000_000 ? best : 0;
 }
 
 export function start(game) {

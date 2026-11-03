@@ -89,3 +89,6 @@ The HUD confirms what happened, quickly:
 - **Canvas or engine UI:** draw the HUD in its own pass or layer after the scene, in screen
   space, with the same theme tokens. Cache text that doesn't change.
 - Hide the HUD for photo modes, cutscenes and screenshots with one switch.
+- Names in the HUD (teammates, name tags over players, a kill feed) are text from outside:
+  cleaned and capped, and set with `textContent`, `fillText` or the engine's plain text object
+  with rich text off (`screens.md`, "Names and other text from outside").

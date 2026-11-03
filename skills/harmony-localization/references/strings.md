@@ -72,28 +72,60 @@ function textOf(entry: Entry): string | PluralText {
   return typeof entry === "object" && "text" in entry ? entry.text : entry;
 }
 
-/** The string for key, with {name} placeholders filled. Numbers are formatted for the language. */
-export function t(key: string, values: Record<string, string | number> = {}): string {
-  const entry = strings[key] ?? fallback[key];
+type Values = Record<string, string | number>;
+
+// The raw text for key, with the plural form picked; placeholders still in it.
+function lookup(key: string, values: Values): string {
+  const entry = Object.hasOwn(strings, key) ? strings[key] : Object.hasOwn(fallback, key) ? fallback[key] : undefined;
   if (entry === undefined) {
     console.warn("Missing string: " + key);
     return "";
   }
-  let text = textOf(entry);
-  if (typeof text !== "string") {
-    const count = Number(values.count ?? 0);
-    text = text[plurals.select(count)] ?? text.other ?? "";
+  const text = textOf(entry);
+  if (typeof text === "string") {
+    return text;
   }
+  const count = Number(values.count ?? 0);
+  return text[plurals.select(count)] ?? text.other ?? "";
+}
+
+function fill(text: string, values: Values): string {
   return text.replace(/\{(\w+)\}/g, (match, name) => {
-    const value = values[name];
-    if (value === undefined) {
+    if (!Object.hasOwn(values, name)) {
       return match;
     }
+    const value = values[name];
     return typeof value === "number" ? numbers.format(value) : value;
   });
 }
 
+/** The string for key, with {name} placeholders filled. Numbers are formatted for the language. */
+export function t(key: string, values: Values = {}): string {
+  return fill(lookup(key, values), values);
+}
+
+/**
+ * Like t(), but as nodes for a string with an element in it ("Press {key} to jump"): each
+ * placeholder named in elements becomes that element, and everything else, player names
+ * included, becomes text nodes.
+ */
+export function tNodes(key: string, elements: Record<string, Node>, values: Values = {}): DocumentFragment {
+  const fragment = document.createDocumentFragment();
+  for (const piece of lookup(key, values).split(/(\{\w+\})/)) {
+    const name = piece.slice(1, -1);
+    if (/^\{\w+\}$/.test(piece) && Object.hasOwn(elements, name)) {
+      fragment.append(elements[name]);
+    } else if (piece) {
+      fragment.append(fill(piece, values));   // a string appended to a node is a text node
+    }
+  }
+  return fragment;
+}
+
 export async function setLanguage(next: string, source = "en"): Promise<void> {
+  if (!SUPPORTED.includes(next)) {
+    next = source;                           // only the game's own files: never "../" or a URL
+  }
   const load = async (code: string) => (await fetch("./locales/" + code + ".json")).json();
   fallback = await load(source);
   strings = next === source ? fallback : await load(next);
@@ -108,10 +140,23 @@ export async function setLanguage(next: string, source = "en"): Promise<void> {
 - Every screen reads its text through `t()` when it's drawn, so a language change only needs a
   redraw, not a reload.
 - Placeholder values that come from players (names) are passed in as they are, and the result
-  is shown with `textContent` or the engine's text call, never as HTML.
+  is shown with `textContent` or the engine's plain text object (rich text off), never as HTML.
+  Never put the result of `t()` into `innerHTML`, even when the string itself is the game's own.
 - Strings that need markup (a bold word, a key icon) use placeholders for it, such as
-  `"Press {key} to jump"`, and the UI builds the element for `{key}`, rather than HTML inside
-  the string.
+  `"Press {key} to jump"`, and the UI builds the element for `{key}` and passes it to `tNodes`,
+  rather than HTML inside the string. Player names and other values still go in as text nodes.
+
+```ts
+const key = document.createElement("kbd");
+key.textContent = "Space";
+hint.replaceChildren(tNodes("hint.jump", { key }));
+```
+
+- Plurals come from `Intl.PluralRules` and the plural forms in the file. Never build a plural
+  rule, a formatter or a template as code from a language file (`eval`, `new Function`).
+- `SUPPORTED` (in "Choosing the language") is the only list `setLanguage` loads from, with
+  `"pseudo"` added in development builds. A language from the query string, storage or the
+  browser goes through `pickLanguage` first; a file address is never taken from outside.
 
 ## Plurals
 
@@ -156,6 +201,9 @@ versus German).
 1. A language the player picked in settings, saved in `localStorage`.
 2. Otherwise the first of `navigator.languages` the game supports.
 3. Otherwise the source language.
+
+The result is always one of `SUPPORTED`, so a saved value that was edited (`../../x`, a URL)
+never reaches the file address.
 
 ```ts
 const SUPPORTED = ["en", "es", "pt-BR", "fr", "de", "ru", "ja", "ko", "zh-Hans"];

@@ -66,7 +66,12 @@ differ, follow it.
 3. **Fix the code** the checker would flag: service worker registration, the browser's file
    pickers, clipboard reads, root-absolute `fetch("/...")` and asset paths, localhost
    addresses. Don't add the Harmony SDK to replace a file picker; a download and
-   `<input type="file">` work without it.
+   `<input type="file">` work without it. Then search the game's own source (not vendor or
+   minified files) for `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `eval`,
+   `new Function` and `setTimeout` or `setInterval` with a string, and make sure none of them gets
+   a player name, a peer message, a save or a loaded file: those are shown with `textContent` and
+   never run as code. The checker doesn't look for these, since a built bundle is full of library
+   code that uses them safely.
 4. **Build**, with the project's own build command.
 5. **Test under a folder**, the way Harmony serves it: serve the folder above the build and open
    the build's subfolder, such as `http://localhost:8080/dist/`. Every file must load, with
@@ -110,4 +115,4 @@ differ, follow it.
 | [references/build-settings.md](references/build-settings.md) | Relative addresses and PWA settings for Vite, webpack, Parcel, esbuild, Phaser, three.js, PlayCanvas, Unity and Godot |
 | [references/packaging.md](references/packaging.md) | Making the `.zip` or the single `.html` on Windows, macOS and Linux |
 | [references/listing.md](references/listing.md) | The upload form field by field (limits, tags, supported platforms, players, media, chat, release notes, new versions) and the listing file to write |
-| [scripts/check_build.mjs](scripts/check_build.mjs) | Checks a build folder, `.html` or `.zip`: `index.html` at the top, service workers, file pickers, dev cheats left in, clipboard reads, root-absolute addresses, manifests, localhost. Exit code 1 on errors. `--json` for machine-readable output. |
+| [scripts/check_build.mjs](scripts/check_build.mjs) | Checks a build folder, `.html` or `.zip`: `index.html` at the top, service workers, file pickers, dev cheats left in, clipboard reads, root-absolute addresses, manifests, localhost, zip paths that leave the top folder. Exit code 1 on errors. `--json` for machine-readable output. |

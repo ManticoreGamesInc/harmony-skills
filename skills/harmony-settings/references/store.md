@@ -90,6 +90,12 @@ Settings are read like a save: never trusted, never allowed to crash the game.
 ```ts
 const SETTINGS_KEY = "star-hopper.settings";   // your game's own id
 const SETTINGS_VERSION = 1;
+const COLOR_MODES = ["default", "protan", "deutan", "tritan", "highContrast"] as const;
+const LANGUAGES = ["en", "de", "ja"] as const;   // the game's own language files
+
+// KeyboardEvent.code values are letters and digits ("KeyW", "ArrowUp", "Numpad5");
+// controller buttons are "pad:0" to "pad:16".
+const BINDING_CODE = /^(?:[A-Za-z][A-Za-z0-9]{0,23}|pad:(?:1[0-6]|[0-9]))$/;
 
 function num(value: unknown, min: number, max: number, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
@@ -111,7 +117,7 @@ function loadSettings(): Settings {
   } catch {
     return s;                                // blocked storage or broken JSON: defaults
   }
-  if (!raw || typeof raw !== "object" || typeof raw.version !== "number") {
+  if (!raw || typeof raw !== "object" || !Number.isInteger(raw.version) || raw.version < 0) {
     return s;
   }
   const d = migrateSettings(raw.version, raw.data) ?? {};
@@ -121,8 +127,31 @@ function loadSettings(): Settings {
   s.graphics.fpsCap = [0, 30, 60].includes(g.fpsCap) ? g.fpsCap : s.graphics.fpsCap;
   s.graphics.shadows = bool(g.shadows, s.graphics.shadows);
   // ...each field the same way: numbers clamped, booleans checked, choices from an allowed list.
-  s.controls.bindings = readBindings(d.controls?.bindings);   // your own; see the bindings rule below
+  const a = d.accessibility ?? {};
+  s.accessibility.textScale = num(a.textScale, 1, 1.5, s.accessibility.textScale);
+  s.accessibility.colorMode = oneOf(a.colorMode, COLOR_MODES, s.accessibility.colorMode);
+  s.general.language = oneOf(d.general?.language, ["", ...LANGUAGES], "");
+  s.controls.bindings = readBindings(d.controls?.bindings);
   return s;
+}
+
+function readBindings(raw: unknown): Record<string, string[]> {
+  const out = structuredClone(DEFAULT_BINDINGS);
+  if (!raw || typeof raw !== "object") {
+    return out;
+  }
+  const saved = raw as Record<string, unknown>;
+  for (const action of Object.keys(DEFAULT_BINDINGS)) {   // the game's actions, never the file's keys
+    const list = Object.hasOwn(saved, action) ? saved[action] : undefined;
+    if (!Array.isArray(list)) {
+      continue;
+    }
+    const codes = list.filter((code): code is string => typeof code === "string" && BINDING_CODE.test(code));
+    if (codes.length > 0) {
+      out[action] = [...new Set(codes)].slice(0, 4);
+    }
+  }
+  return out;                    // then apply the reserved-key rules (options.md), as rebinding does
 }
 ```
 
@@ -130,8 +159,16 @@ function loadSettings(): Settings {
   default.
 - Bindings: keep only known actions and valid codes; an action left with no binding gets its
   default back, so the player can't lock themselves out.
-- `migrateSettings` reshapes old versions, as for saves; a version newer than the build is read
-  as far as it parses but never written over until the player changes something.
+- Read only the fields the game knows into a fresh `defaultSettings()`. Never `Object.assign`,
+  spread or deep-merge the parsed object over the defaults, and never loop over its keys to
+  index an object, so a `__proto__` or `constructor` key in the file does nothing.
+- `migrateSettings` reshapes old versions, as for saves: steps in an array indexed by a version
+  checked to be a whole number from 0 up (`Number.isInteger`), never a handler looked up by a
+  string from the file on a plain object. A version newer than the build is read as far as it
+  parses but never written over until the player changes something.
+- Values reach CSS, the page's `lang` and `dir`, and file paths only after this check: the text
+  scale as a clamped number, the color mode and language from their lists. A language code
+  from storage never goes into a fetch address or a file path unchecked, so `../` can't get in.
 
 ## Saving
 

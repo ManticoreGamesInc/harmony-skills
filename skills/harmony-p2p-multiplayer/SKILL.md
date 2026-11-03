@@ -201,6 +201,11 @@ applying them, so they can decide knowing the risks.
   second per peer, with a separate budget per channel.
 - Sanitize names without going ASCII-only: keep letters and digits in every script, strip
   bidirectional and zero-width controls.
+- Show every peer string (names, a revealed secret, any free text) as text: `textContent` or
+  the engine's plain text object, never HTML, a URL, CSS or code.
+- Copy known fields into fresh objects; never merge a message into game state. Key anything
+  by peer data in a `Map`, and route message types with a `switch` or a `Map` of allowed
+  types, so `__proto__` or `constructor` can't reach built-ins.
 - Clamp anything a guest can request of the host (damage, stun time, knockback, spawn counts).
 
 **Staying connected**

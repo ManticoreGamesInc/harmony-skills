@@ -332,6 +332,10 @@ public class FakeServicesSettings : ScriptableObject {
 ```
 
 The second friend's name is deliberately markup, so a label with rich text on shows the problem.
+Every Unity text system parses rich text by default, and each has its own switch: TextMeshPro
+`richText = false`, uGUI `Text.supportRichText = false`, and UI Toolkit
+`Label.enableRichText = false`. Turn it off on every label that shows a name, a game title, a file
+name or anything a peer sent.
 Set the first friend's `currentGameId` to the game's own Game ID, so the fake has a friend in this
 game.
 
@@ -525,6 +529,11 @@ private void OnSession(ServicesEvent session) {
 - `currentGame` is display text; never compare it to decide anything. To tell whether a friend is
   in this game, compare `currentGameId` with the Game ID (`GAME_ID` in the JavaScript file); empty
   means unknown, never a different game.
+- A file from `FileOpened` is whatever the player picked: parse it into a class with only the
+  fields you expect, check every field, and show its name with rich text off.
+- Data from the JavaScript side never chooses code: no `Application.ExternalEval`, no `eval` or
+  `new Function` in a `.jslib`, and no `SendMessage` whose object or method name comes from an
+  event. Switch on the event's `type` as `Dispatch` does.
 
 ## Bridging other JavaScript modules
 
@@ -628,9 +637,14 @@ public static class StarHopperRoom {
 ```
 
 - Build the look from the services bridge's session (`displayName` and `discriminator`), or a
-  random handle for signed-out players; never send `accountId`.
+  random handle for signed-out players; never send `accountId`. Make its JSON with
+  `JsonUtility.ToJson` on a small class, never by joining strings: a typed name with a `"` in it
+  breaks hand-built JSON.
 - Parse each `data` event's `text` as the protocol says, validate every field, and show any text
-  from it with `richText = false`.
+  from it with `richText = false`. Parse JSON with `JsonUtility.FromJson` into a class with only
+  the fields you expect, then range-check numbers (reject NaN and infinity) and allow-list
+  strings. Never use a parser that picks types from the data, such as Newtonsoft.Json with
+  `TypeNameHandling` on, or `BinaryFormatter`.
 - Set `Application.runInBackground = true` while in a room, so the host's simulation keeps
   running in a hidden tab; set it back after.
 - Networking only exists in the web build: test it there with two browser windows. In the Editor,

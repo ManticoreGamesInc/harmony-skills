@@ -4,7 +4,7 @@ description: Add the Harmony SDK (@playharmony/sdk) to a web game that needs Har
 license: MIT
 metadata:
   sdk-package: "@playharmony/sdk"
-  sdk-status: early-access
+  sdk-status: preview
 ---
 
 # Harmony SDK
@@ -13,7 +13,7 @@ Harmony hosts web games. Players play them in the browser, as a guest or with a 
 
 Most games don't need the SDK. A game with no SDK and no Game ID uploads and plays on Harmony as it is, and its players still get the overlay, sign-in, friends and chat. Add the SDK only when the game itself uses one of the features below.
 
-The SDK is in early access, and new calls and options arrive often. Harmony aims to keep updates compatible with existing games, so install the latest version and keep it up to date. Check each call against [references/api.md](references/api.md) before you use it.
+The SDK is in preview. Harmony adds calls and options often during the preview, and keeps each update compatible with existing games where it can, but an update may still change or remove a call the game uses. Install the latest version and keep it up to date, and use only the calls sdk.md documents. Check each call against [references/api.md](references/api.md) before you use it.
 
 Harmony publishes the SDK docs for agents as plain Markdown at https://playharmony.ai/developers/sdk.md. Read it when you can reach it, and where the two differ, follow it. Don't fetch https://playharmony.ai/developers/sdk for this, since that page is drawn by JavaScript and a plain fetch returns an empty shell.
 
@@ -177,6 +177,9 @@ Treat any text the SDK gives your game as written by a player or a creator. Harm
 - Never pass it to `innerHTML`, `outerHTML`, `insertAdjacentHTML` or `document.write`, and never build HTML from it with strings. Text such as `<img src=x onerror="…">` runs as code there, inside the game.
 - React and Vue show text safely, except through `dangerouslySetInnerHTML` and `v-html`.
 - Set attributes through the element, as in `element.setAttribute("title", name)`, never by writing them into HTML.
+- In an engine, use its plain text object, not one that reads markup (PixiJS `HTMLText`, a Phaser BBCode plugin).
+- For one-line labels and toasts, drop control and invisible characters (newlines, right-to-left overrides, zero-width) and cap the length, so a long or odd game title can't break the layout or flip the label.
+- Never put it in a URL, `href`, `src`, CSS or file path, and never run it as code (`eval`, `new Function`, a string passed to `setTimeout`).
 
 See [references/showing-text.md](references/showing-text.md) for examples in plain DOM, canvas, React and Vue, and the patterns to look for when reviewing a game.
 
@@ -194,7 +197,7 @@ See [references/showing-text.md](references/showing-text.md) for examples in pla
 - **The game gets no input while the overlay is open.** The SDK stops keyboard and pointer input before the game's listeners see it, and a click on the game closes the overlay. A key the player was holding still gets its `keyup`. The one exception is a capture listener on `window` that the game added before attaching: it should return early while `harmony?.isOpen()` is true, and not cancel keys, or typing in the overlay loses characters.
 - **Don't fight the overlay's hotkey.** Shift+Tab opens the overlay by default. If the game uses Shift+Tab, pass a different `hotkey` to `attach`, or `null` to turn it off and open the overlay from the game's own button.
 - **File dialogs need a player action.** Call `files.save` and `files.open` from a click or key handler. Called at any other time, a first save downloads the file instead, and an open fails. Firefox and Safari have no save dialog, so there a save always downloads. Handle the `"cancelled"` and `"downloaded"` outcomes, and catch rejections: each has a `code` (`"no_user_activation"`, `"busy"`, `"file_not_found"`, `"file_too_large"` and others) listed in [references/api.md](references/api.md).
-- **Check files the player opens.** The player can pick any file. Validate `data` before using it, and show its `name` as text.
+- **Check files the player opens.** The player can pick any file. Validate `data` before using it: copy each known field, checked, into a new object, and never merge the parsed data over the game's state or defaults with `Object.assign`, spread or a deep merge. Show its `name` as text. Stored saves in `localStorage` get the same checks.
 - **Use `currentGame` only for display.** Creators write game titles freely. Never compare a friend's `currentGame` to decide whether they are in your game.
 - **Compare `currentGameId` to find friends in your game.** A friend whose `currentGameId` equals the game's own `gameId` is in it. When `currentGameId` is absent, Harmony doesn't know: treat it as unknown, never as a different game.
 - **Every listener returns a stop function.** Call it when the screen or component that listens goes away.

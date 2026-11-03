@@ -62,6 +62,11 @@ Every color, font, size, radius, shadow and duration is a token, defined once:
 - Canvas and engine UI read the same values (export them from one module for code to use).
 - A token changes once and the whole UI follows, which makes themes, color-blind modes and text
   scaling cheap.
+- Token values come from the game's own code. A theme or color-blind mode saved in settings picks
+  one of the game's own token sets by name, checked against the list
+  (`root.dataset.theme = THEMES.includes(saved) ? saved : "default"`), and a text scale is a
+  number clamped to its range before it goes into a custom property. Never write a color, size,
+  font or `url()` read from a save, a file or another player into a token or a `style`.
 - A game that uses the Harmony SDK can match the Harmony overlay to these tokens with its
   `--mtc-*` custom properties, set on an ancestor of the SDK's container (see "Theming the
   overlay" in the harmony-sdk skill). Without the SDK, the overlay keeps Harmony's own theme.

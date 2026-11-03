@@ -33,6 +33,11 @@ How to draw them:
 Build overlay geometry once and update it, rather than creating new objects every frame, or the
 overlay itself causes stutter.
 
+Labels can show strings from outside the game (other players' names, chat, a friend's
+presence, a file name). Draw them as text: `fillText`, the engine's plain text object with rich
+text off, or `textContent` in an HTML overlay, never `innerHTML` or a CSS2D/CSS3D label built
+from an HTML string.
+
 ## Time controls
 
 ```ts
@@ -65,6 +70,9 @@ function frame(now: number): void {
 - **Level and checkpoint select:** go straight to any level, room or wave.
 - **Seed:** show the current seed, and start a run with a given one, to replay a bug.
 - **URL parameters** in dev builds (`?level=4&seed=1234&god=1`), so a link reproduces a setup.
+  Read them behind the dev switch and parse each one: a level from the game's own list, a seed
+  as a whole number, cheats through the registry (`cheats.md`). Never evaluate a parameter or use
+  it as a property name, a script or module address, or a URL to open.
 - **Snapshots:** save the game state to memory (or a file) and load it back, to retry the same
   moment many times.
 
@@ -75,10 +83,18 @@ the current wave, the active quest, counters, flags. Readable at a glance, updat
 second rather than every frame. For deeper digging, expose the game object on
 `window.game` in dev builds, so the browser console can read and change anything.
 
+The inspector shows game state, which in online play includes other players' names and
+messages. Show every value as text: lil-gui sets its names and titles with `textContent` (check
+any other panel library does the same before passing it such strings), and a hand-built
+inspector uses `textContent` or `fillText`. Cap long strings so one name can't fill
+the panel.
+
 ## Logging
 
 - One logger with categories (`physics`, `ai`, `net`, `audio`) that the dev panel can turn on and
   off, instead of `console.log` scattered and forgotten.
+- Log strings from other players as separate arguments (`log("net", "joined", name)`), never
+  inside a `%c` style string.
 - A ring buffer of the last few hundred events, shown in the panel and copied with one button
   into a bug report, with the seed and build version.
 - No logging in hot loops in the shipped build; the dev switch removes it with everything else.

@@ -99,6 +99,8 @@ Add a unit test in the game's test runner that reads every language file and che
 - no language has keys the source file doesn't;
 - each string has the same placeholders as the source;
 - each plural string has every category its language uses;
+- no string holds HTML tags (`<b>`, `<a href>`): markup is a placeholder the UI fills (`tNodes`
+  in `strings.md`);
 - no translation is more than about 1.5 times the source's length when its note gives a size,
   as a warning to check on screen.
 

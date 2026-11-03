@@ -66,6 +66,13 @@ you hand over.
 - **Never trust a save.** Players can edit `localStorage`, old versions leave old formats, and
   imported files can be anything. Parse every field: drop unknown ids, clamp numbers, fall back
   to defaults. A bad save never crashes the game or wipes good data.
+- **Pick fields, never merge.** Build a fresh default save and copy in only the fields the game
+  knows, one by one. Never `Object.assign`, spread or deep-merge a parsed save over the
+  defaults or into game state, and never use its keys to index objects, so a `__proto__` or
+  `constructor` key in a file can't reach anything.
+- **Text from saves and players is text.** Player names, imported file names and any string
+  from a save are shown with `textContent` or the engine's plain text object (rich text off),
+  never HTML. Names are cleaned (bidi and zero-width characters and line breaks out) and capped.
 - **One save for the device, without the SDK.** Load it at once; never wait on Harmony.
 - **With the SDK, one save per player.** Key saves on `accountId` from the session, never on the
   display name. A guest who creates an account keeps the same `accountId`, so their save

@@ -221,7 +221,10 @@ extends Resource
 ]
 ```
 
-The second friend's name is deliberately BBCode, so a label with BBCode on shows the problem. Set
+The second friend's name is deliberately BBCode, so a label with BBCode on shows the problem.
+Show names, game titles, file names and anything a peer sent in a plain `Label`, which never
+parses BBCode. Where a `RichTextLabel` is needed, keep `bbcode_enabled` off for that text, or
+escape it before adding it. Set
 the first friend's `currentGameId` to the game's own Game ID, so the fake has a friend in this
 game.
 Save one as `res://fake_services/fake_services_settings.tres` and edit it in the Inspector.
@@ -377,6 +380,13 @@ func _on_session_changed(new_session: Dictionary) -> void:
 - `currentGame` is display text; never compare it to decide anything. To tell whether a friend is
   in this game, compare `currentGameId` with the Game ID (`GAME_ID` in the JavaScript file); empty
   means unknown, never a different game.
+- A file from `file_opened` is whatever the player picked: parse it, check every field's type
+  and range, and show its name in a plain `Label`.
+- Data reaches JavaScript only through `get_interface` calls and callbacks, as above. Never
+  build code for `JavaScriptBridge.eval` from any value, even one you think is safe: a name or
+  file name with a quote in it becomes code there. Never run untrusted text through
+  `Expression.parse` and `execute`, `str_to_var`, or `bytes_to_var_with_objects`, which can build
+  objects or call methods from the text.
 
 ## Bridging other JavaScript modules
 
@@ -462,7 +472,10 @@ func leave() -> void:
 - Build the look from the services autoload's session (`displayName` and `discriminator`), or a
   random handle for signed-out players; never send `accountId`.
 - Parse each `data` event's `text` as the protocol says, validate every field, and show any text
-  from it in a plain `Label`.
+  from it in a plain `Label`. Parse JSON with `JSON.parse_string`, check that the result is a
+  `Dictionary` and that each field has the type you expect (`typeof`), read only the keys you
+  know, check numbers with `is_finite` and clamp them, and allow-list strings. Never merge the
+  parsed `Dictionary` into game state.
 - Browsers stop the engine's loop in a hidden tab; the room's heartbeat keeps running in
   JavaScript, but the host's simulation pauses, so keep sessions short-lived in hidden tabs or
   warn the host.

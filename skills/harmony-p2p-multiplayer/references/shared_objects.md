@@ -28,7 +28,8 @@ waits for a turn, and there are no avatars to interpolate, so neither `sync.md` 
 ## Locks and grabs
 
 - `grab{id}` from a player: the host gives the lock if the object is free and not already
-  placed, and broadcasts `held{id, who}`. Otherwise it answers `refused{id}`.
+  placed, and broadcasts `held{id, who}`. Otherwise it answers `refused{id}`. Keep objects and
+  locks in a `Map` keyed by id, and treat an id that isn't in it as unknown.
 - One lock per object, a small cap per player (one or two held at once).
 - Locks die with their holder: when a player leaves or times out, the host releases
   everything they held and broadcasts it, or pieces stay stuck in a ghost's hand.
@@ -89,6 +90,8 @@ host: events with n         ->  only to synced peers
 
 - Live events go only to peers in the `synced` set. An event sent while the guest was still
   loading would land on a board that isn't there yet.
+- The plan names content by an id from the game's own table (a puzzle id, an image id), never
+  by a URL or file path the guest would load.
 - Every plan carries a fresh token. Async work (image loads, piece cutting) checks the token
   when it finishes and throws its result away if the plan has changed since.
 - The guest always answers, `loaded{ok: false, reason}` included (unknown content, an image

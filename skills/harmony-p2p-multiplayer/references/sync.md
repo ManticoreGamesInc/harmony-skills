@@ -125,7 +125,8 @@ Fastest route to a faithful remote player: clone the local avatar and strip it.
 - Keep visuals that read state: cosmetics, damage smoke, hit flash, footstep or trail
   effects. Feed them through a small interface (`isBoosting`, `isGrounded`, `boostStarted`)
   that both the real controller and a ghost driver implement.
-- Apply the friend's cosmetics from their lobby look (colors, trail, effects).
+- Apply the friend's cosmetics from their lobby look (colors, trail, effects), once cleaned:
+  ids looked up in your own tables, colors from your palette.
 - **On the host only**, give the guest's proxy a solid collider, moved by code rather than by physics, so enemy
   attacks and projectiles can hit it. Route damage on the proxy to an `H` message for the
   guest instead of applying it locally.

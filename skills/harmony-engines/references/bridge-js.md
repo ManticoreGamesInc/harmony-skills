@@ -39,6 +39,15 @@ loader script provides the SDK as the `PlayHarmony` global, so nothing needs bun
     }
   }
 
+  // Names, game titles and file names are written by players and creators, and the engine shows
+  // them as plain text. Drop control and invisible formatting characters (newlines,
+  // bidirectional overrides, zero-width), and cap the length so a long title can't break a label.
+  function displayText(value, max = 64) {
+    const text = typeof value === "string" ? value : "";
+    const oneLine = text.replace(/[\t\n\r\u2028\u2029]+/g, " ").replace(/[\p{Cc}\p{Cf}]/gu, "");
+    return Array.from(oneLine).slice(0, max).join("");
+  }
+
   // Only the fields the game needs.
   function sessionEvent(session) {
     if (session.kind !== "account" && session.kind !== "guest") {
@@ -48,8 +57,8 @@ loader script provides the SDK as the `PlayHarmony` global, so nothing needs bun
       type: "session",
       kind: session.kind,
       accountId: session.accountId,
-      displayName: session.displayName,
-      discriminator: session.discriminator ?? "",
+      displayName: displayText(session.displayName),
+      discriminator: displayText(session.discriminator),
     };
   }
 
@@ -153,10 +162,10 @@ loader script provides the SDK as the `PlayHarmony` global, so nothing needs bun
           type: "friends",
           friends: friends.map((f) => ({
             accountId: f.accountId,
-            displayName: f.displayName,
-            discriminator: f.discriminator ?? "",
+            displayName: displayText(f.displayName),
+            discriminator: displayText(f.discriminator),
             online: f.online,
-            currentGame: f.currentGame ?? "",
+            currentGame: displayText(f.currentGame),
             currentGameId: f.currentGameId ?? "",   // empty means unknown, never a different game
           })),
         }),
@@ -199,7 +208,7 @@ loader script provides the SDK as the `PlayHarmony` global, so nothing needs bun
           for (let i = 0; i < bytes.length; i++) {
             binary += String.fromCharCode(bytes[i]);
           }
-          emit({ type: "fileOpened", outcome: "opened", name: result.name, base64: btoa(binary) });
+          emit({ type: "fileOpened", outcome: "opened", name: displayText(result.name), base64: btoa(binary) });
         },
         (error) => emit({ type: "fileOpened", outcome: "failed", code: error?.code ?? "internal" }),
       );
@@ -235,8 +244,9 @@ shapes:
 | `fileSaved` | `outcome` (`saved`, `downloaded`, `cancelled`, `failed`, `unavailable`); `code` when `failed` (sdk.md's codes, such as `no_user_activation`, `busy`, `file_too_large`) | After `saveFile` |
 | `fileOpened` | `outcome` (`opened`, `cancelled`, `tooBig`, `failed`, `unavailable`), `name`, `base64`; `code` when `failed` | After `openFile` |
 
-Names, game titles and file names are text written by players and creators: the engine shows them
-with rich text off. `currentGame` is for showing only; to tell whether a friend is in this game,
+Names, game titles and file names are text written by players and creators. The file cleans them
+for display (no control or invisible characters, at most 64 characters), and the engine still
+shows them with rich text off. `currentGame` is for showing only; to tell whether a friend is in this game,
 compare `currentGameId` with the Game ID. An empty `currentGameId` means Harmony doesn't know the
 friend's game, never that it is a different one.
 
@@ -268,12 +278,17 @@ First in the page's `<head>`:
 
 ## Keeping it in step with sdk.md
 
-- Every Harmony call in the file must be one sdk.md documents. The SDK is in early access and
-  new calls arrive often, so check sdk.md for new ones when you update.
+- Every Harmony call in the file must be one sdk.md documents. The SDK is in preview: new calls
+  arrive often, and an update may still change or remove one, so check the file against sdk.md
+  when it changes.
 - `signIn` is in the file for a game that has its own sign-in button; the game calls it only from
   the player's click or key press.
 - Chat, friend requests and account actions are not in the file on purpose: in a hosted game the
   overlay handles them. The game opens the overlay instead (`open()`).
+- Data crosses the bridge only as arguments to these functions and as JSON event strings. Never
+  build JavaScript source from game or player data and run it (`eval`, `new Function`, a string
+  passed to `setTimeout`, a `<script>` element or `import()` with a URL from data, Godot's
+  `JavaScriptBridge.eval`, Unity's `Application.ExternalEval`), and never open a URL from data.
 
 ## Bridging other JavaScript modules
 
@@ -309,10 +324,17 @@ window.starHopperRoom = {
     room = new P2PRoom({ Peer, namespace: "starhopper-", version, look: JSON.parse(lookJson) });
     for (const type of EVENTS) {
       room.on(type, (payload) => {
-        const event = { type, ...payload };
-        if (payload.look) {
-          // A peer's look is untrusted: clean it before the engine sees it.
-          event.look = { name: cleanName(payload.look.name), tag: cleanId(payload.look.tag ?? "", 4) };
+        // type last, so no field of the payload can replace it. The error event has a type of
+        // its own, which the engine gets as errorType.
+        const event = { ...payload, type };
+        if (type === "error") {
+          event.errorType = payload.type;
+        }
+        if (type === "request" || type === "joined") {
+          // A peer's look is untrusted, and may not even be an object: clean it before the
+          // engine sees it. Harmony names are up to 20 characters.
+          const look = payload.look !== null && typeof payload.look === "object" ? payload.look : {};
+          event.look = { name: cleanName(look.name, 20), tag: cleanId(look.tag, 4) };
         }
         emit(event);
       });
@@ -360,6 +382,8 @@ window.starHopperRoom = {
   and keep both it and the source file out of the engine's build.
 - `data` events carry the peer's message as a string. It is untrusted: the engine parses and
   validates every field, and shows any text from it with rich text or BBCode off.
+- `request` and `joined` carry only the look's cleaned `name` and `tag`. `error` events carry
+  the room's error type as `errorType`, since `type` is the event's own name.
 - The room's heartbeat runs on a JavaScript timer, so it survives a hidden tab, but the engine's
   own loop may not: keep the host's simulation running while a session is live (see the engine
   reference).

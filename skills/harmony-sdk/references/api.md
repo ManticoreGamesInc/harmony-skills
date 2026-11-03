@@ -1,6 +1,6 @@
 # Harmony SDK API reference
 
-Every public call in `@playharmony/sdk`, for games that use the SDK. Most games don't need it: see "Decide whether the game needs the SDK" in [../SKILL.md](../SKILL.md). The SDK is in early access, and new calls and options arrive often, so use the latest version. Harmony's docs for agents are at https://playharmony.ai/developers/sdk.md; where they differ from this file, follow them.
+Every public call in `@playharmony/sdk`, for games that use the SDK. Most games don't need it: see "Decide whether the game needs the SDK" in [../SKILL.md](../SKILL.md). The SDK is in preview: calls and options are added often, and an update may still change or remove one, so use the latest version and only the calls documented here. Harmony's docs for agents are at https://playharmony.ai/developers/sdk.md; where they differ from this file, follow them.
 
 Use only the calls listed here. Anything else in the package is internal and can change in any release. Friend requests, chat and account changes happen in the overlay: open it with `harmony.open()` rather than building screens for them.
 
@@ -358,8 +358,9 @@ Calls the listener with the whole new session each time it changes: the player s
 
 ```ts
 // readProgress and showProgress are your own. Progress is kept in this browser, one entry per
-// player. A stored save can be anything, so readProgress checks every field and falls back to
-// defaults rather than trusting it.
+// player. A stored save can be anything, so readProgress checks every field, copies the known
+// ones into a new object and falls back to defaults rather than trusting it. It never merges the
+// parsed save over the defaults with Object.assign, spread or a deep merge.
 const stopWatching = harmony.auth.onSessionChanged((session) => {
   if (session.kind === "guest" || session.kind === "account") {
     let saved: unknown = null;
@@ -429,10 +430,11 @@ harmony.friends.onPresenceChanged(listener: (friend: Friend) => void): () => voi
 Calls the listener with a friend's whole, current entry each time they come online, go offline or change game. Returns a function that stops listening.
 
 ```ts
-// showToast is your own.
+// showToast is your own, and sets the toast's textContent. forLabel drops control and invisible
+// characters and caps the length (see showing-text.md), since a title can be long or hold a newline.
 const stopWatching = harmony.friends.onPresenceChanged((friend) => {
   if (friend.online && friend.currentGame) {
-    showToast(`${friend.displayName} is playing ${friend.currentGame}`);
+    showToast(`${forLabel(friend.displayName)} is playing ${forLabel(friend.currentGame)}`);
   }
 });
 ```
@@ -513,8 +515,9 @@ Catch the rejection around every save and open, and keep the game running whatev
 The player can pick any file, so check its `data` before you use it, and show its `name` as text: a file name can hold any character.
 
 ```ts
-// openButton, level, readLevel and showToast are your own. readLevel checks every field and
-// returns null for anything that isn't a valid level.
+// openButton, level, readLevel and showToast are your own. readLevel checks every field, copies
+// the known ones into a new object (never Object.assign, spread or a deep merge of the parsed
+// data), and returns null for anything that isn't a valid level.
 openButton.addEventListener("click", async () => {
   if (!harmony) {
     return;

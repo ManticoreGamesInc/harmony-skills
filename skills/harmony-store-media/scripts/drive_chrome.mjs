@@ -26,6 +26,12 @@
 //                               opens the page's address again for the next take
 //   GET  <base>/quit            closes the browser and exits (an unsaved take is dropped)
 // The window stays muted. Keep it on screen: a minimized window stops drawing.
+//
+// /eval runs whatever JavaScript it is sent, so only this machine's own tools may reach it: the
+// server listens on 127.0.0.1 only, every route sits under the random token, requests whose Host
+// isn't 127.0.0.1 or localhost are refused (DNS rebinding), and so is any request that carries an
+// Origin header, since that comes from a web page, never from curl or a script. goto takes only
+// http and https addresses.
 import { createServer } from "node:http";
 import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
@@ -131,6 +137,9 @@ async function handle(route, params, body) {
 	if (route === "key") {
 		const key = params.get("key");
 		const action = params.get("action") || "press";
+		if (!["press", "down", "up"].includes(action)) {
+			return { ok: false, error: "action must be press, down or up" };
+		}
 		await page.keyboard[action](key);
 		return { ok: true };
 	}
@@ -138,6 +147,9 @@ async function handle(route, params, body) {
 		const x = Number(params.get("x"));
 		const y = Number(params.get("y"));
 		const action = params.get("action") || "click";
+		if (!["click", "down", "up", "move"].includes(action)) {
+			return { ok: false, error: "action must be click, down, up or move" };
+		}
 		if (action === "click") {
 			await page.mouse.click(x, y);
 		} else {
@@ -149,6 +161,10 @@ async function handle(route, params, body) {
 		return { ok: true };
 	}
 	if (route === "goto") {
+		// Only web addresses: a file:// page plus /eval would read files on this machine.
+		if (!/^https?:\/\//i.test(params.get("url") || "")) {
+			return { ok: false, error: "url must start with http:// or https://" };
+		}
 		await page.goto(params.get("url"));
 		return { ok: true, url: page.url() };
 	}
@@ -173,6 +189,12 @@ async function handle(route, params, body) {
 }
 
 const server = createServer(async (req, res) => {
+	// A web page always sends Origin on a POST, and a rebound DNS name shows in Host: refuse both.
+	const host = (req.headers.host || "").replace(/:\d+$/, "");
+	if (req.headers.origin || !["127.0.0.1", "localhost"].includes(host)) {
+		sendJson(res, 403, { ok: false, error: "only local tools may call the driver, not web pages" });
+		return;
+	}
 	const url = new URL(req.url, "http://127.0.0.1");
 	const prefix = "/" + TOKEN + "/";
 	if (!url.pathname.startsWith(prefix)) {

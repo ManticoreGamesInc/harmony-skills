@@ -70,8 +70,15 @@ game best, and say why in one line.
   player resumes. Without the SDK the game isn't told when the overlay opens, but opening it
   takes keyboard focus, so pause on the window's `blur` event (which also covers switching tabs
   or apps) and let the player resume. Don't add the SDK only for this.
-- **Text from players is text.** Names and anything players type are shown with `textContent`
-  or the engine's text call, never HTML.
+- **Text from outside is text.** Player names, a friend's presence ("Mika is playing Star
+  Hopper", where the title is whatever its creator wrote), file names, messages from other
+  players and anything players type go on screen with `textContent`, `setAttribute` or the
+  engine's plain text object (rich text, BBCode and HTML text off), never `innerHTML` or HTML
+  built from strings. That includes toasts, modals, tooltips and screen-reader labels. Clean
+  names first: strip bidi and zero-width control characters and line breaks, and cap the
+  length. Build the game's own screens the same way, so they stay safe when a name is passed in
+  later. Colors, sizes and fonts in the theme come from the game's own code, never from a save,
+  a file or another player.
 - **UI text from the language files** when the game is translated, with room for longer
   translations.
 

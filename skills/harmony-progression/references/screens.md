@@ -65,6 +65,9 @@ Unlock progress uses the stats screen's labels ("Battles fought 3/5"), never raw
 ## Text and safety
 
 - Show the player's name, and the name of any file they import, as text: `textContent` or the
-  engine's text call, never `innerHTML` or HTML built from strings.
+  engine's plain text object with rich text off, never `innerHTML` or HTML built from strings.
+- Clean names first: keep letters, marks, digits, spaces and `.`, `_`, `-` (which drops bidi
+  overrides, zero-width characters and line breaks), and cap the length by code point. Before
+  showing a file name, strip those control characters and line breaks and cap its length too.
 - Item names and blurbs come from the game's own catalog, but render them the same way, since
   catalogs end up translated or community-made.

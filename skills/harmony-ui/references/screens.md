@@ -14,6 +14,7 @@ examples are TypeScript for an HTML overlay; the same structure works in an engi
 - Credits
 - Modals
 - Toasts
+- Names and other text from outside
 - Transitions
 
 ## The screen stack
@@ -150,6 +151,40 @@ function updatePause(): void {
 - Short notices that need no answer: "Achievement unlocked", "Settings saved", "Friend joined".
 - At the top or bottom center, away from important HUD information and the Harmony badge corner.
 - Three at most at once, each gone after 3 to 4 seconds, never taking focus or input.
+
+```ts
+const toastLayer = document.getElementById("toasts") as HTMLElement;   // aria-live="polite" in the HTML
+
+export function showToast(message: string): void {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;          // text, never HTML: toasts often hold a player's name
+  toastLayer.append(toast);
+  while (toastLayer.children.length > 3) {
+    toastLayer.firstElementChild?.remove();
+  }
+  setTimeout(() => toast.remove(), 3500);
+}
+```
+
+## Names and other text from outside
+
+Player names, a friend's presence ("Mika is playing Star Hopper", where the title is whatever
+its creator wrote), file names and anything other players send can hold markup, bidi control
+characters or a thousand letters. On every screen (results, lobby, scoreboards, toasts,
+modals, tooltips):
+
+- Set it as text: `textContent`, or `title` and `aria-label` through the element's property or
+  `setAttribute`. Never `innerHTML`, `insertAdjacentHTML` or HTML built with template strings or
+  `+`, even for the game's own strings, so a screen stays safe when a name is passed in later.
+- In engine UI, use the plain text object with rich text off: PixiJS `Text` (not `HTMLText`),
+  Phaser `Text` (no BBCode plugin), Babylon GUI `TextBlock`, TextMeshPro with Rich Text off,
+  Godot `Label` (or `RichTextLabel` with BBCode off).
+- Clean names before showing them: keep letters, marks, digits, spaces and `.`, `_`, `-`, which
+  drops bidi overrides, zero-width characters and line breaks, and cap the length by code point
+  (`Array.from(name).slice(0, 16)`). Give long names an ellipsis and `dir="auto"`.
+- Sentences with a name come from the language string with the name filled in, then set as
+  text ("Mika joined").
 
 ## Transitions
 
