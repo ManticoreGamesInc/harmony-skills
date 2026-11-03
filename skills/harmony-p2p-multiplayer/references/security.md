@@ -125,7 +125,9 @@ guests. Rules:
    and zero-width controls (`U+202E` flips the rest of a label). Don't go ASCII-only: Chinese,
    Japanese and Korean players all become "Friend". `cleanName()` in the room module does
    this. Turn rich text / markup off on every label that shows a peer string (`textContent`, not
-   `innerHTML`, in the DOM; plain text objects, not rich-text or BBCode ones, in an engine). Two players with the
+   `innerHTML`, in the DOM; PixiJS `Text`, not `HTMLText`; Phaser `Text`, not a BBCode or
+   rich-text plugin; Unity labels with rich text off, which is on by default in TextMeshPro, uGUI
+   and UI Toolkit; Godot's plain `Label`, not `RichTextLabel` with BBCode on). Two players with the
    same or look-alike names: show a short tag after the name (`Mina #4F2`) wherever players
    pick one (kick, invite lists).
 7. **Arrays:** cap length before iterating.
@@ -137,6 +139,24 @@ guests. Rules:
 10. **Derive limits from the wire.** Any limit that sizes an event (board size, group size,
     hand size) must keep the largest event under the message cap, or those events are
     dropped silently.
+11. **Known fields only, into fresh objects.** Read the fields each message type has and
+    ignore any others. Never merge a parsed message into game state or a look with
+    `Object.assign`, spread or a deep merge: copy each checked field across. Keep anything
+    keyed by a value from a peer (peer ids, object ids, rejoin tokens, cosmetic ids) in a `Map`,
+    or check the key against your own table first, so `__proto__` or `constructor` can't
+    reach an object's built-ins.
+12. **Data never picks code.** Route each message type with a `switch` or a `Map` of
+    allowed types, never `handlers[message.type]` on a plain object, which a type of
+    `constructor` or `toString` reaches. Never `eval`, `new Function`, a string passed to
+    `setTimeout`, or `import()` with anything a peer sent.
+13. **Not a URL, a style or a file path.** A peer sends ids that you look up in your own
+    tables, never a URL, a file path or a CSS value. A color is an index into your palette, or
+    a string that matches `/^#[0-9a-f]{6}$/i`, set through the style property, never into
+    `cssText` or `<style>` text.
+14. **Free text and chat.** Leave chat out of the game where you can: players already talk
+    somewhere else, and on Harmony the overlay has chat. If the game needs free text (a team
+    name, a short note), cap its length, strip control, bidirectional and zero-width
+    characters, and show it as text only, like a name.
 
 ## Trust between host and guest
 
@@ -170,6 +190,8 @@ guests. Rules:
 - [ ] Names keep non-Latin scripts, strip bidi and zero-width controls
 - [ ] Hide my IP fails closed without TURN
 - [ ] Size cap, strict parse, finite + clamp, enum and ID allow-lists, sanitized names
+- [ ] Known fields copied into fresh objects; peer-keyed lookups in a `Map`; message types routed by `switch` or `Map`
+- [ ] Every peer string shown as text, never HTML, a URL, CSS or code
 - [ ] Messages from non-friends ignored
 - [ ] No PII on the wire: a typed name, a random handle or a Harmony name and tag, never an account ID
 - [ ] A secret a guest owns (word, hand, board) never reaches the host in plain form

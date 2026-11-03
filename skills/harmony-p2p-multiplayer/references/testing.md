@@ -43,7 +43,8 @@ since the engine's editor can't run the room.
 - Use two browser profiles or one normal + one private window, so local saves, names and
   "consent already shown" flags don't collide (same-origin windows share `localStorage`).
   Where that isn't possible (two tabs or two Playwright pages on one origin), a dev-only
-  `?name=` override keeps both players from showing the same default name.
+  `?name=` override keeps both players from showing the same default name. Clean it with
+  `cleanName()` like any name, and leave it out of release builds.
 - Host in one, copy the code, join in the other. Watch both consoles.
 - Test across machines and networks before release (phone hotspot is a good NAT test).
 - Agents: don't use two tabs of a browser panel built into the agent's app for this. A background tab there pauses `requestAnimationFrame` yet still reports
@@ -110,6 +111,34 @@ it("guest joins and both sides see each other", async () => {
 Port the rest of `test_p2p_room.mjs` the same way: one `it` per section, with generous
 timeouts, since the checks wait on real timers.
 
+### A hostile peer
+
+The same harness tests the game's own screens against a peer that ignores the rules. The room
+module's tests cover its helpers; this covers what the game does with the result. Feed a hostile
+look and hostile messages, then play through the lobby, the match and the results:
+
+```js
+// Each of these must show as plain, capped text, change nothing, and crash nothing.
+const HOSTILE_NAMES = [
+	"<img src=x onerror=\"window.__pwned = true\">",
+	"x".repeat(500),
+	"‮evil",                       // right-to-left override
+	"zero​width\nnew line",
+	"__proto__",
+];
+for (const name of HOSTILE_NAMES) {
+	room._debugSetFriend("test-peer", { name, tag: "<b>", level: "9e999", color: "red;background:url(x)" });
+	room._debugReceive("test-peer", JSON.stringify({ type: "__proto__", constructor: { prototype: { polluted: true } } }));
+	room._debugReceive("test-peer", JSON.stringify({ type: "constructor", x: "NaN" }));
+	room._debugReceive("test-peer", "{not json");
+}
+```
+
+Then check: no element the peer named exists (`document.querySelector("img[src=x]")` is null),
+`window.__pwned` and `({}).polluted` are undefined, names show cleaned and capped with no flipped
+text, the level and color fall back to defaults, and the game still plays. Do the same in an
+engine through its bridge, with labels showing markup as plain characters.
+
 Watch for test-only artifacts: a harness that pauses between steps leaves interpolation
 buffers stale and the ghost hides itself, and a quiet timer that isn't reset drops the fake
 friend after the heartbeat timeout.
@@ -160,6 +189,8 @@ so it runs in solo too if the bug might not be multiplayer-only. Remove it once 
 - [ ] Hidden tab for 30 s on each side, including while the guest is loading
 - [ ] Joining with the code from before a kick or New Code fails fast with a clear message
 - [ ] A Chinese, Japanese or Korean name shows as typed on the other side
+- [ ] The hostile-peer harness: markup, 500-character, right-to-left and `__proto__` names and
+      messages show as plain capped text, pollute nothing and crash nothing
 - [ ] Builds with different content tables refuse each other at the handshake
 - [ ] Before release: two devices on two different networks, and with Hide my IP on, check
       `chrome://webrtc-internals` shows a relay candidate pair

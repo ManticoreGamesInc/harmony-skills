@@ -29,7 +29,7 @@ Attributes: set them through the element.
 badge.setAttribute("title", session.displayName);
 ```
 
-Canvas and game engines: draw the text with the text call, such as `fillText` on a 2D canvas. A canvas never reads text as HTML.
+Canvas and game engines: draw the text with the text call, such as `fillText` on a 2D canvas. A canvas never reads text as HTML. Some engine text objects do read markup, so pick the plain one: PixiJS `Text`, not `HTMLText`; Phaser `Text`, not a BBCode or rich-text plugin; Babylon GUI `TextBlock`; Three.js text drawn to a canvas texture, never an HTML overlay built from strings. Unity and Godot are covered in the `harmony-engines` skill.
 
 ```ts
 context.fillText(session.displayName, 16, 32);
@@ -47,6 +47,33 @@ Vue: use `{{ }}` or `v-text`, and bind attributes with `:title`.
 <span :title="friend.displayName">{{ friend.displayName }}</span>
 ```
 
+Svelte: use `{friend.displayName}`, never `{@html …}`. Lit: use `${…}` in an `html` template, never `unsafeHTML`.
+
+`document.title`, a `Notification` and the text of `navigator.share` take plain text, so a name or title can go there as it is.
+
+## Long or odd text
+
+Text shown as text can't run, but it can still mislead or break a layout. A game title can be very long, hold a newline, or hold invisible characters: a right-to-left override (`U+202E`) flips the rest of a label, and zero-width characters hide inside a name. For one-line labels and toasts, clean the text first:
+
+```ts
+// Turns line breaks into spaces, drops control and invisible formatting characters, then caps
+// the length by code point.
+function forLabel(text: string, max = 64): string {
+  const oneLine = text.replace(/[\t\n\r\u2028\u2029]+/g, " ").replace(/[\p{Cc}\p{Cf}]/gu, "");
+  return Array.from(oneLine).slice(0, max).join("");
+}
+
+line.textContent = `${forLabel(friend.displayName)} is playing ${forLabel(friend.currentGame ?? "")}`;
+```
+
+Show the `discriminator` tag beside the name wherever players need telling apart.
+
+## Never as a URL, a style or code
+
+- Never put Harmony text in a URL, an `href` or `src`, a CSS value or `<style>` text, or a file path.
+- Never run any text as code: no `eval`, `new Function`, `setTimeout` or `setInterval` with a string, and no `import()`, `<script>`, `Worker` or Blob URL built from it.
+- A `message` listener of the game's own checks `event.origin` against the exact origins it expects and checks the message's shape before using any field.
+
 ## Unsafe: never do this with Harmony text
 
 Each of these reads the text as HTML. A name or title such as `<img src=x onerror="…">` then runs as code inside the game.
@@ -57,13 +84,15 @@ Each of these reads the text as HTML. A name or title such as `<img src=x onerro
 - building HTML from strings, such as `` `<li>${friend.displayName}</li>` `` passed to any of the above or to a library that parses HTML
 - jQuery `.html(…)`, `$(…)` with a string that holds the text, or `.append(string)`
 - React `dangerouslySetInnerHTML`
-- Vue `v-html`
+- Vue `v-html`, Svelte `{@html …}`, Lit `unsafeHTML`
+- `createContextualFragment`, an iframe's `srcdoc`, or `DOMParser` output added to the page
 
 ## Reviewing a game
 
 Search the game's code for these, and check where each value comes from:
 
 - `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`
-- `dangerouslySetInnerHTML`, `v-html`, `.html(`
+- `dangerouslySetInnerHTML`, `v-html`, `{@html`, `unsafeHTML`, `.html(`, `srcdoc`, `createContextualFragment`
+- `eval`, `new Function`, `HTMLText`, `cssText`, `addEventListener("message"`
 
 If any of them can receive a value from `harmony.auth`, `harmony.friends` or `harmony.files`, change it to one of the safe forms above.

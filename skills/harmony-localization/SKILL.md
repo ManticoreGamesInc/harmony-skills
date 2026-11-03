@@ -69,6 +69,15 @@ choices they can change.
   friend's presence, for a game that uses the Harmony SDK), chat and anything players type stay exactly as written, shown as text,
   never HTML. Wrap them so they don't flip the layout around them (`<bdi>` or `dir="auto"`;
   see [references/text-and-layout.md](references/text-and-layout.md)).
+- **Filled strings are text.** A translated sentence with a player's name in it goes on screen
+  with `textContent` or the engine's plain text object, never `innerHTML`. Markup in a string
+  (a key icon, a bold word) is a placeholder the UI fills with an element it builds, and the
+  names around it stay text nodes. Names are cleaned first: bidi and zero-width control
+  characters and line breaks out, length capped.
+- **Language codes from a list.** A language from settings, the browser or the address picks
+  one of the game's own languages before it sets `lang` or `dir` or loads `locales/<code>.json`;
+  anything else falls back to the source language. Plurals and formats come from `Intl`, never
+  from code built out of a language file (`eval`, `new Function`).
 - **Format with `Intl`.** Numbers, scores, times, dates, lists and plurals through
   `Intl.NumberFormat`, `Intl.DateTimeFormat`, `Intl.ListFormat` and `Intl.PluralRules`, in the
   chosen language.

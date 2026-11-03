@@ -69,6 +69,9 @@ function cosmetic(id: string, slot: Slot): Cosmetic {
 - Every slot has at least one starter (an item with an empty `unlock`), and the defaults are
   starters.
 - Cosmetics change looks only. The game reads `equipped[slot]` through `cosmetic()` and draws it.
+- An id another player sends goes through `cosmetic()` too, so an unknown id draws the slot's
+  default. Never use a received id as an object key, a file path, a URL or a CSS class without
+  that lookup, and never draw colors or names the other player sent instead of the catalog's.
 
 ## The player's progress
 
@@ -157,7 +160,8 @@ function upgradeMult(id: string, tier: number): number {
 
 Multiply the matching tunable by `upgradeMult` where the game uses it
 (`speed * upgradeMult("speed", tiers.speed)`). Online, the host decides whether upgrades are on
-for a match, and each side uses the tiers the other player sent, clamped the same way.
+for a match, and each side uses the tiers the other player sent, clamped the same way and read
+only for the ids in `UPGRADES`, never by looping over the keys in the message.
 
 ## Round rewards
 
@@ -226,7 +230,9 @@ Unit tests pay for themselves here, since a broken save or payout is hard to see
 - No upgrade's top tier exceeds `MAX_UPGRADE_EFFECT`; tier levels and costs only go up.
 - A default save starts with the starters owned and equipped.
 - Junk parses safely: `null`, a string, wrong types, unknown ids, huge and negative numbers,
-  equipped items not owned or in the wrong slot.
+  equipped items not owned or in the wrong slot, a fractional or negative version, and
+  `__proto__` and `constructor` keys (afterwards `({} as any).polluted` is still `undefined`
+  and the defaults are unchanged).
 - Every old save version migrates and parses (keep one sample save per version as a fixture).
 - A save newer than the build is never written over.
 - Rewards: line items, mode multiplier, caps, a quit pays a quarter and no victory.

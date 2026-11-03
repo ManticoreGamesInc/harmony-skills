@@ -56,6 +56,13 @@ on vague answers comes out vague. This skill asks a lot, on purpose, before buil
   art, before menus, progression or polish.
 - **Playable at every stage,** and checked: it builds, it runs, the console is clean, and the
   stage's goal works.
+- **Data from outside the game's code is shown as text and never run.** Names (typed, from
+  Harmony or from other players), titles, chat, room codes, saves and loaded files go on screen
+  through `textContent`, canvas `fillText` or the engine's plain-text label with rich text off,
+  never `innerHTML` or markup built from them. Parse saves, imported files and peer messages and
+  check each field's type, length and allowed values before using it; dispatch peer messages by
+  an allow-list of known types. No `eval`, `new Function` or `setTimeout` with a string, ever.
+  `harmony-ui`, `harmony-sdk`, `harmony-progression` and `harmony-p2p-multiplayer` have the details.
 - **The brief is the source of truth.** A change of plan updates the brief first.
 - **Ask before big changes** to what was agreed, and before adding dependencies the brief didn't
   plan for.

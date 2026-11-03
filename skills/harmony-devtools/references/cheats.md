@@ -48,9 +48,15 @@ interface Cheat {
   key?: string;                   // optional shortcut, used while the dev panel is open
 }
 
+// A number argument from the panel, the console or the URL; anything else is the fallback.
+function numberArg(arg: string | undefined, fallback: number): number {
+  const value = Number(arg);
+  return arg && Number.isFinite(value) ? value : fallback;
+}
+
 export const cheats: Cheat[] = [
   { id: "god", label: "God mode", run: (game) => { game.player.invulnerable = !game.player.invulnerable; } },
-  { id: "giveCoins", label: "Give 1000 coins", run: (game, arg) => game.wallet.add(Number(arg ?? 1000)) },
+  { id: "giveCoins", label: "Give 1000 coins", run: (game, arg) => game.wallet.add(numberArg(arg, 1000)) },
   { id: "skipLevel", label: "Skip level", run: (game) => game.completeLevel(), key: "KeyN" },
   { id: "spawnBoss", label: "Spawn boss at cursor", run: (game) => game.spawn("boss", game.cursorWorld()) },
 ];
@@ -69,6 +75,10 @@ export function runCheat(game: Game, id: string, arg?: string): void {
 
 - Cheats call the game's own functions (`completeLevel`, `wallet.add`), so they test the real
   code paths, not shortcuts around them.
+- `runCheat` is the only way in, and it runs only what's in the registry. Every trigger (panel,
+  keys, console, URL) passes an id and a string argument to it; none of them evaluates text
+  (`eval`, `new Function`) or looks a name up on `window` or another plain object
+  (`window[id]`, `game[param]`). Arguments are parsed like any input (`numberArg`).
 - Show a small "CHEATS ON" badge whenever one has been used, so a screenshot or a bug report
   can't pass for normal play.
 
@@ -77,10 +87,26 @@ export function runCheat(game: Game, id: string, arg?: string): void {
 - **The dev panel:** a button per cheat, in a Cheats folder (`tuning.md`).
 - **Keys:** shortcuts that work only while the dev panel is open, so they never fire by accident
   during normal play testing.
-- **A console:** `window.cheat = (id, arg) => runCheat(game, id, arg)` in dev builds, for
-  `cheat("giveCoins", "5000")` from the browser console.
+- **A console:** `window.cheat = (id, arg) => runCheat(game, id, String(arg ?? ""))` in dev
+  builds, for `cheat("giveCoins", "5000")` from the browser console.
 - **URL parameters:** `?cheats=god,giveCoins:5000&level=7` applied at start, so a link sets up a
-  test.
+  test. Anyone can send the developer a link, so the parameters are parsed, capped and checked
+  against the registry, and only in dev builds:
+
+```ts
+// src/dev/url-cheats.ts, imported only behind the dev switch
+export function applyUrlCheats(game: Game): void {
+  const params = new URLSearchParams(location.search);
+  const steps = [...(setups.get(params.get("setup") ?? "") ?? [])];
+  steps.push(...(params.get("cheats") ?? "").split(","));
+  for (const step of steps.slice(0, 20)) {
+    const [id, arg] = step.split(":", 2);
+    if (id) {
+      runCheat(game, id, arg?.slice(0, 64));   // unknown ids are refused by runCheat
+    }
+  }
+}
+```
 
 ## Starting from a setup
 
@@ -88,10 +114,11 @@ Many tests need a setup, not one cheat: "level 7, the double jump unlocked, 3 li
 Make these named setups, applied at start from the panel or the URL (`?setup=late-game`):
 
 ```ts
-const setups: Record<string, string[]> = {
-  "late-game": ["skipTo:7", "unlock:doubleJump", "lives:3", "giveCoins:500"],
-  "boss-fight": ["skipTo:boss", "god"],
-};
+// A Map, so a name from the URL such as "__proto__" finds nothing.
+const setups = new Map<string, string[]>([
+  ["late-game", ["skipTo:7", "unlock:doubleJump", "lives:3", "giveCoins:500"]],
+  ["boss-fight", ["skipTo:boss", "god"]],
+]);
 ```
 
 Keep them in the dev folder with the cheats, and add one whenever a bug needed a long setup to
@@ -142,7 +169,8 @@ multiplayer without them is slow. Players never can, because a published game ha
   the owner's game or not at all. Show the other players where it is ("on the other player's
   game") instead of a reveal that can't work.
 - **Messages from peers never trigger cheats.** A guest who wants one runs it in the host's
-  window. A release build has no cheat code to trigger anyway.
+  window. No message type, field or chat text from another player reaches `runCheat`. A release
+  build has no cheat code to trigger anyway.
 - **Show it.** While a cheat has been used in a session, show a small "DEV CHEATS" tag to every
   player in it, so a test result isn't mistaken for a clean one.
 - Play the multiplayer features through once without cheats before release.
@@ -151,4 +179,5 @@ multiplayer without them is slow. Players never can, because a published game ha
 
 The test hooks used by automated tests (`window.__test`) can call the same registry
 (`start(seed)`, `runCheat("skipLevel")`), so a browser test reaches the boss the same way the
-developer does by hand. Keep the hooks behind the same dev or test switch.
+developer does by hand. Keep the hooks behind the same dev or test switch, and have them take
+plain values (numbers, booleans, short strings), never code or a name to look up.

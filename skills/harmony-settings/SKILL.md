@@ -60,6 +60,12 @@ Details, defaults and how to apply each: [references/options.md](references/opti
 - **Saved safely.** Settings live in `localStorage`, versioned and checked on load like a save:
   a broken or old settings file never breaks the game; unknown values fall back to defaults.
   See [references/store.md](references/store.md).
+- **Checked before use, shown as text.** Read only the fields the game knows into fresh
+  defaults; never `Object.assign`, spread or merge stored or imported settings, so a `__proto__`
+  key does nothing. A stored value reaches CSS, the page's `lang` and `dir`, or a file path only
+  as a clamped number or a value from the game's own list (a language code is one of the
+  game's languages, never `../` or a URL). Key names, labels and anything read from storage go
+  on screen with `textContent` or the engine's plain text object, never HTML.
 - **Reset to defaults**, per tab and for everything, with a confirmation.
 - **Reachable from the title screen and the pause menu.** In online play, opening settings
   doesn't pause the shared game.
@@ -78,8 +84,8 @@ Details, defaults and how to apply each: [references/options.md](references/opti
 ## Check and hand over
 
 - Change each setting and see it apply with the menu open; reload the page and see it kept.
-- Put broken JSON, then wrong-typed values, in the settings key in `localStorage` and reload:
-  the game starts, with defaults for anything invalid.
+- Put broken JSON, then wrong-typed values, a `__proto__` key and a language of `../x`, in the
+  settings key in `localStorage` and reload: the game starts, with defaults for anything invalid.
 - Rebind a key, then try to bind Esc and Shift+Tab: both are refused.
 - Use the screen with every input the game supports; Esc closes it and focus returns.
 - Tell the developer which tabs and settings were built, which were left out and why, and the

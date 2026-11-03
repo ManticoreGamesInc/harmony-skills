@@ -89,6 +89,12 @@ const STUN_FALLBACK = ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:
 
 let iceCache = null;
 
+// String() throws on a parsed object whose toString and valueOf aren't functions
+// ({"toString":1,"valueOf":1}), so the helpers read only strings and numbers as text.
+function asText(value) {
+	return typeof value === "string" ? value : typeof value === "number" ? String(value) : "";
+}
+
 // Validation helpers. Run every field from a peer through one of these.
 
 /** A room code from the cryptographic random source: 32 symbols, no look-alikes (0 O 1 I). */
@@ -107,7 +113,7 @@ export function newCode(length = 12) {
 
 /** What the player typed or pasted, as a bare code: upper case, A-Z and 0-9 only. */
 export function cleanCode(typed) {
-	return String(typed ?? "").slice(0, 64).toUpperCase().replace(/[^A-Z0-9]/g, "");
+	return asText(typed).slice(0, 64).toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 /** XXXX-XXXX-XXXX for display. */
@@ -121,7 +127,7 @@ export function groupCode(code, size = 4) {
  * and zero-width controls and emoji. Display with textContent.
  */
 export function cleanName(name, max = 16, fallback = "Friend") {
-	const kept = String(name ?? "").slice(0, 256).normalize("NFC").replace(/[^\p{L}\p{M}\p{N} ._-]/gu, "").replace(/ +/g, " ");
+	const kept = asText(name).slice(0, 256).normalize("NFC").replace(/[^\p{L}\p{M}\p{N} ._-]/gu, "").replace(/ +/g, " ");
 	// By code point, so a character outside the BMP is never cut in half.
 	const safe = Array.from(kept.trim()).slice(0, max).join("").trim();
 
@@ -130,18 +136,19 @@ export function cleanName(name, max = 16, fallback = "Friend") {
 
 /** An ID for a lookup table (cosmetic, map, item): [A-Za-z0-9_], 1 to max long, else "". */
 export function cleanId(value, max = 32) {
-	const text = String(value ?? "");
+	const text = asText(value);
 
 	return text.length <= max && /^[A-Za-z0-9_]+$/.test(text) ? text : "";
 }
 
-/** A finite number clamped to [min, max]; anything else (NaN, Infinity, "", "12abc") is fallback. */
+/** A finite number clamped to [min, max]; anything else (NaN, Infinity, "", "12abc", objects) is fallback. */
 export function clampNumber(value, min, max, fallback = min) {
 	if (value === "" || value === null || value === undefined) {
 		return fallback;
 	}
 
-	const number = typeof value === "number" ? value : Number(value);
+	// Only numbers and numeric strings: Number() on a parsed object can throw.
+	const number = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
 
 	return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
 }
@@ -940,7 +947,7 @@ export class P2PRoom {
 			return;
 		}
 
-		if (String(message.version) !== this.version) {
+		if (asText(message.version) !== this.version) {
 			this._refuse(id, "version");
 			return;
 		}
@@ -1137,7 +1144,10 @@ export class P2PRoom {
 	}
 
 	_error(type) {
-		this._emit("error", { type, message: ERROR_TEXT[type] ?? "Online play hit a problem. Try again." });
+		// Own keys only: a type such as "constructor" must not pick up Object's built-ins.
+		const known = Object.prototype.hasOwnProperty.call(ERROR_TEXT, type);
+
+		this._emit("error", { type, message: known ? ERROR_TEXT[type] : "Online play hit a problem. Try again." });
 	}
 
 	_emit(type, detail) {

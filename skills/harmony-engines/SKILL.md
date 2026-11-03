@@ -20,9 +20,10 @@ web export, so this skill doesn't cover it.
 
 Harmony's docs for agents are at https://playharmony.ai/developers/sdk.md (called sdk.md below).
 Read them when you can reach them; where they differ from this skill, follow them. The SDK is in
-early access, and new calls and options arrive often. Harmony aims to keep updates compatible
-with existing games, and the bridge loads the SDK from Harmony's loader script, which serves the
-current version, so the game stays up to date without a rebuild.
+preview: Harmony adds calls and options often and keeps updates compatible with existing games
+where it can, but an update may still change or remove a call. The bridge loads the SDK from
+Harmony's loader script, which serves the current version, so the game stays up to date without
+a rebuild; when sdk.md changes, check the bridge's calls against it.
 
 ## Steps
 
@@ -71,7 +72,12 @@ Every engine's bridge follows the same rules:
   sign-in only from the player's click or key press. Without a button of its own, players sign
   in from the overlay.
 - **Text is text.** Names, game titles and file names are written by players and creators: show
-  them with rich text or BBCode off.
+  them with rich text or BBCode off (Unity: `richText`, `supportRichText` or `enableRichText`
+  false; Godot: a plain `Label`). The same goes for anything a peer sends in multiplayer.
+- **Data is never code.** Values cross the bridge as function arguments and JSON strings only.
+  Never build JavaScript from them for `eval`, `JavaScriptBridge.eval` or
+  `Application.ExternalEval`, never let them pick a method by name, and never open a URL from
+  them. Parse JSON into known fields and check each one; opened files and peer messages too.
 - **Guests have no friends list.** Check the session is an account before asking for friends (the
   bridge answers a guest with `friendsFailed`); offer a guest a button that opens the overlay, or
   one that signs in, instead.

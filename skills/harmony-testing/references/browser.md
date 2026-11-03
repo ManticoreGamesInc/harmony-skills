@@ -123,8 +123,9 @@ any free port that no other tool in the project uses, and keep the two files in 
 A small object the tests read and drive, built only into test and development builds:
 
 ```ts
-// In the game, where its state machine lives.
-if (import.meta.env.MODE !== "production") {
+// In the game, where its state machine lives. Only dev and test builds, by name, so a build in
+// any other mode (staging, a release with its own --mode) leaves the hooks out.
+if (import.meta.env.DEV || import.meta.env.MODE === "test") {
   (window as any).__test = {
     get state(): string {
       return game.state;                 // "loading" | "title" | "playing" | "results"
@@ -145,6 +146,11 @@ if (import.meta.env.MODE !== "production") {
 Build the version the smoke test runs with the same minification as production but with the
 hooks in, into its own folder so it never ends up in an upload (with Vite,
 `vite build --mode test --outDir dist-test`).
+
+- Hooks take plain values (numbers, booleans, short strings) and call the game's own functions.
+  None evaluates a string (`eval`, `new Function`) or looks up a name it was given on `window`
+  or the game object.
+- Check the upload build has no hooks: search `dist/` for `__test`, as for the dev tools' marker.
 
 ## The smoke test
 
@@ -192,6 +198,29 @@ test("loads, plays a round and shows the results with no errors", async ({ page 
   which attaches to it on its own (the overlay shows `fake`), and in jsdom with
   `loadFakeGameServices` (see "Harmony SDK code" in [unit.md](unit.md)).
 - Wait on the hook's state, never on a fixed delay.
+
+### A hostile name
+
+A game that shows names (a lobby, a scoreboard, results, a friend list) gets one more test:
+put a hostile name where players see it and check it shows as text. The hook that sets the
+name is your own (`setPlayerName` here), test builds only.
+
+```ts
+const HOSTILE_NAME = "<img src=x onerror=\"window.__pwned=1\">\u202Eevil\u200B" + "W".repeat(300);
+
+test("a hostile name shows as text", async ({ page }) => {
+  await page.goto("/game/");
+  await page.waitForFunction(() => (window as any).__test?.state === "title", null, { timeout: 20000 });
+  await page.evaluate((name) => (window as any).__test.setPlayerName(name), HOSTILE_NAME);
+  await page.evaluate(() => (window as any).__test.finishRound(true));   // a screen that shows the name
+  await page.waitForFunction(() => (window as any).__test.state === "results");
+  expect(await page.evaluate(() => (window as any).__pwned)).toBeUndefined();
+  expect(await page.locator("img[src='x']").count()).toBe(0);
+  const text = await page.locator("body").innerText();
+  expect(text).not.toContain("\u202E");
+  expect(text).not.toContain("W".repeat(100));      // the name was capped
+});
+```
 
 ## Console errors and missing files
 

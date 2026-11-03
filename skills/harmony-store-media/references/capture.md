@@ -40,7 +40,7 @@ Use whatever the agent has:
   node <skill>/scripts/drive_chrome.mjs --url http://localhost:<game port> --out <work folder> --size 1920x1080
   ```
 
-  It opens a visible Chrome window (`--browser msedge` for Edge) and prints a base URL. Send JavaScript as the body of `POST <base>/eval`, with `return` for the value you want back. It also takes `screenshot?name=`, `viewport?w=&h=`, `key?key=`, `mouse?x=&y=` and `goto?url=` (see the top of the script). Keep the window on screen: a minimized window stops drawing.
+  It opens a visible Chrome window (`--browser msedge` for Edge) and prints a base URL. Send JavaScript as the body of `POST <base>/eval`, with `return` for the value you want back. It also takes `screenshot?name=`, `viewport?w=&h=`, `key?key=`, `mouse?x=&y=` and `goto?url=` (see the top of the script). Call it with curl or a script on this machine: it refuses requests from web pages (any with an Origin header), and `goto` takes only http and https addresses. Keep the window on screen: a minimized window stops drawing.
 
 To judge a frame, look at the page (a screenshot from the browser tool, or the driver's `screenshot`). Judge with screenshots, but save the real captures with `t.save`.
 

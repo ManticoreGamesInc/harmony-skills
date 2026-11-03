@@ -64,6 +64,29 @@ function merge(base, over) {
 
 const cfg = merge(DEFAULTS, CONFIG);
 const c = cfg.colors;
+// Colors go into SVG markup below, so each must be a plain CSS color: hex, rgb(), hsl() or a name.
+const COLOR = /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([0-9.,%\s/deg]+\)|[a-z]+)$/i;
+for (const key in c) {
+	if (!COLOR.test(String(c[key]).trim())) {
+		const message = "colors." + key + " isn't a CSS color: " + JSON.stringify(c[key]);
+		document.body.dataset.status = "error: " + message;
+		throw new Error(message);
+	}
+}
+// Font settings go into CSS (style attributes and @font-face), so none may hold characters that
+// end a value, a rule or a string early. The family may quote its names; the file is escaped below.
+const CSS_VALUE = /^[^;{}<>\\()"'\r\n]*$/;
+const CSS_FAMILY = /^[^;{}<>\\()\r\n]*$/;
+for (const key of ["font", "taglineFont"]) {
+	for (const field of ["family", "weight", "style", "stretch", "letterSpacing", "wordSpacing"]) {
+		const value = cfg[key][field];
+		if (value != null && !(field === "family" ? CSS_FAMILY : CSS_VALUE).test(String(value))) {
+			const message = key + "." + field + " has characters a CSS value can't hold: " + JSON.stringify(value);
+			document.body.dataset.status = "error: " + message;
+			throw new Error(message);
+		}
+	}
+}
 const square = cfg.layout === "square";
 const W = square ? 2048 : 2400;
 const H = square ? 2048 : 1300;
@@ -97,7 +120,9 @@ function fontFace(name, f) {
 	if (!f.file) {
 		return "";
 	}
-	return "@font-face { font-family: '" + name + "'; src: url('" + f.file + "'); font-weight: 1 1000; font-style: " + f.style + "; font-stretch: 25% 200%; }\n";
+	// A quoted CSS string, so a ' or ) in a file name (file URLs keep both) can't end the url().
+	const file = "\"" + String(f.file).replace(/[\\"]/g, "\\$&").replace(/[\r\n\f]/g, "\\a ") + "\"";
+	return "@font-face { font-family: '" + name + "'; src: url(" + file + "); font-weight: 1 1000; font-style: " + f.style + "; font-stretch: 25% 200%; }\n";
 }
 
 function fontStack(name, f) {

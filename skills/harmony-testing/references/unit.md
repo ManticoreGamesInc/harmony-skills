@@ -9,6 +9,7 @@ Vitest; Jest and `node:test` work the same way.
 - Fixed-step simulation and replays
 - Saves and settings
 - Fuzzing inputs
+- Hostile names
 - Harmony SDK code
 
 ## Seeded randomness
@@ -89,16 +90,53 @@ Saves and settings come from storage players can edit, so test that reading them
 the game:
 
 - A default save round-trips: write it, read it back, get the same thing.
-- Junk reads safely: `null`, a string, wrong types, unknown ids, huge and negative numbers.
+- Junk reads safely: `null`, a string, wrong types, unknown ids, huge and negative numbers, a
+  fractional or negative version.
+- Keys can't pollute: a save or settings file with `__proto__` and `constructor` keys loads, and
+  afterwards `({} as any).polluted` is still `undefined` and a fresh default is unchanged.
 - Every old version migrates: keep one sample save per version as a fixture and read each.
 - A save newer than the build is never written over.
+
+```ts
+it("ignores __proto__ in a save", () => {
+  const text = '{"game":"star-hopper","version":1,"data":{"__proto__":{"polluted":1},"stats":{"__proto__":{"polluted":1}}}}';
+  expect(parseSaveFile(JSON.parse(text))).not.toBeNull();
+  expect(({} as any).polluted).toBeUndefined();
+});
+```
 
 ## Fuzzing inputs
 
 Anything that comes from outside the game (an imported file, a peer's message, a URL
 parameter) gets a test that throws random and hostile data at the parser: random bytes, deep
-nesting, very long strings, wrong types. The parser returns a safe result or a clear refusal,
-and never throws.
+nesting, very long strings, wrong types, `__proto__` and `constructor` keys. The parser returns
+a safe result or a clear refusal, and never throws.
+
+## Hostile names
+
+A game that shows names (its own players, peers, Harmony display names, friends' presence)
+tests the code that cleans and shows them with names built to break things: markup, a bidi
+override, zero-width characters, a line break and a very long name. In jsdom:
+
+```ts
+// @vitest-environment jsdom
+import { expect, it } from "vitest";
+import { showName } from "../src/ui/names";   // your own: cleans the name and sets it as text
+
+const HOSTILE = ["<img src=x onerror=alert(1)>", "\u202Eevil", "a\u200Bb\nc", "W".repeat(500)];
+
+it("shows hostile names as plain, capped text", () => {
+  for (const name of HOSTILE) {
+    const element = document.createElement("span");
+    showName(element, name);
+    expect(element.children.length).toBe(0);                          // no element was parsed
+    expect(element.textContent).not.toMatch(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\n]/);
+    expect(Array.from(element.textContent ?? "").length).toBeLessThanOrEqual(16);
+  }
+});
+```
+
+The browser version, with the name on a real screen, is in `browser.md` ("A hostile name").
 
 ## Harmony SDK code
 

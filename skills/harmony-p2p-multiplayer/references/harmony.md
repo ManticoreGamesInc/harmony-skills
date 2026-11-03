@@ -15,8 +15,8 @@ Don't install the SDK only for these. Every SDK call below sits behind a check t
 has the SDK, so the game runs the same without it.
 
 The SDK's docs for agents are at https://playharmony.ai/developers/sdk.md; read them before
-calling the SDK, and use only the calls they list. The SDK is in early access, so where this
-file and those docs differ, follow the docs.
+calling the SDK, and use only the calls they list. The SDK is in preview and an update may
+change a call, so where this file and those docs differ, follow the docs.
 
 ## Contents
 - What Harmony does and doesn't do for multiplayer
@@ -54,14 +54,15 @@ The player can still change it:
 ```js
 // harmony is the handle from attach in a game that uses the SDK; null otherwise.
 async function startingName() {
-	const saved = loadSettings().roomName;   // what the player typed last time, if anything
+	// What the player typed last time, if anything. Stored settings can be edited, so clean it.
+	const saved = cleanName(loadSettings().roomName, 20, "");
 	if (saved) {
 		return { name: saved, tag: "" };
 	}
 	if (harmony) {
 		const session = await harmony.auth.getSession();
 		if (session.kind === "account" || session.kind === "guest") {
-			return { name: session.displayName, tag: session.discriminator ?? "" };
+			return { name: cleanName(session.displayName, 20), tag: cleanId(session.discriminator, 4) };
 		}
 	}
 	return { name: randomHandle(), tag: "" };   // randomHandle is your own, as in RustySprocket42

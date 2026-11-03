@@ -26,8 +26,24 @@ check(splitLine("S|a|b", "S", 3)?.length === 3 && splitLine("S|a", "S", 3) === n
 
 // Names in any script survive; controls, emoji and markup characters don't.
 check(cleanName("王小明") === "王小明" && cleanName("José") === "José" && cleanName("김민준") === "김민준", "cleanName keeps CJK and accented names");
-check(cleanName("‮evil​") === "evil" && cleanName("a  🎉  b") === "a b", "cleanName strips bidi, zero-width and emoji");
+check(cleanName("\u202Eevil\u200B") === "evil" && cleanName("a  🎉  b") === "a b", "cleanName strips bidi, zero-width and emoji");
 check(Array.from(cleanName("𠮷".repeat(20))).length === 16 && !cleanName("𠮷".repeat(20)).includes("�"), "cleanName caps by code point");
+
+// A parsed object whose toString and valueOf aren't functions makes String() and Number() throw.
+// The helpers must answer with their fallback instead.
+const hostile = JSON.parse('{"toString":1,"valueOf":1}');
+let threw = false;
+try {
+	check(cleanName(hostile) === "Friend" && cleanId(hostile) === "" && cleanCode(hostile) === "" && clampNumber(hostile, 0, 10, 5) === 5 && clampNumber([7], 0, 10, 5) === 5, "helpers fall back on hostile objects");
+} catch (error) {
+	threw = true;
+}
+check(!threw, "helpers never throw on hostile objects");
+const errorRoom = new P2PRoom({ Peer: MockPeer });
+const errorEvents = log(errorRoom);
+errorRoom._error("constructor");
+errorRoom._error("__proto__");
+check(errorEvents.filter(([t, d]) => t === "error" && typeof d.message === "string").length === 2, "error text comes from own keys only");
 
 check(fingerprint("abc") === fingerprint("abc") && fingerprint("abc") !== fingerprint("abd") && /^[0-9a-f]{8}$/.test(fingerprint("")), "fingerprint");
 
@@ -219,6 +235,19 @@ await wait(150);
 check(host.main.size === 1, "stranger connected");
 await wait(1600);
 check(host.main.size === 0, "silent stranger dropped");
+
+// A hello whose version is a hostile object is refused as a version mismatch, without throwing
+// (a throw here escapes the data handler) and without a join prompt.
+const sneaky = new MockPeer();
+await wait(100);
+const sneakyConn = sneaky.connect("test-" + host.code, { reliable: true });
+const sneakyHeard = [];
+sneakyConn.on("data", (text) => sneakyHeard.push(text));
+sneakyConn.on("open", () => sneakyConn.send('{"type":"hello","version":{"toString":1,"valueOf":1},"look":{"name":{"toString":1}}}'));
+const beforeSneaky = hev.length;
+await wait(150);
+check(sneakyHeard.some((text) => text.includes('"version"')) && !hev.slice(beforeSneaky).some(([t]) => t === "request"), "hello with a hostile version is refused, no prompt");
+await wait(400);
 
 // Only maxStrangers silent connections may wait at once.
 const lurkers = [];

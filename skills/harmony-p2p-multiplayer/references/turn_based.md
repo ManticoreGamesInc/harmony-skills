@@ -117,13 +117,22 @@ room.sendJson({ type: "commit", round, hash: await sha256(salt + "|" + secret) }
 // round; answerFor is the same function the owner's game uses to answer.
 async function checkReveal(message, hash, answers) {
 	const salt = cleanId(message.salt, 16);
-	const secret = cleanSecret(message.secret);   // your own validation; null when invalid
+	const secret = cleanSecret(message.secret);
 	if (salt === "" || secret === null || await sha256(salt + "|" + secret) !== hash) {
 		return false;
 	}
 	return answers.every(({ question, answer }) => answerFor(secret, question) === answer);
 }
+
+// The revealed secret comes from a peer: allow-list its characters and cap its length before
+// hashing, comparing or showing it. For hangman, a word of 2 to 24 letters A to Z; for a hand,
+// a short list of card ids looked up in your own table. null when invalid.
+function cleanSecret(value) {
+	return typeof value === "string" && /^[A-Z]{2,24}$/.test(value) ? value : null;
+}
 ```
+
+Show a revealed secret (the word was "...") only after it passes, and as text, like a name.
 
 ## Turn timers and other clocks
 
@@ -164,7 +173,8 @@ AI that takes turns.
       table, scores and round numbers within the match's limits, time values finite and clamped.
 - [ ] Hidden information: a commit is 64 lowercase hex characters, one per owner per round,
       in before the first question; answers checked for shape and turn; the reveal's salt and
-      secret cleaned, then the hash and every answer checked.
+      secret cleaned (allow-listed characters, capped length), then the hash and every answer
+      checked, and the secret shown only as text.
 - [ ] Names: sanitized, length-capped, shown with `textContent`.
 - [ ] Everything ignored unless the room is connected and the match phase allows it.
 

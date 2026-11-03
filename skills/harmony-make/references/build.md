@@ -143,6 +143,9 @@ developer has the handover:
 - It runs in the browser with a clean console, with no Harmony SDK and no Game ID (or with the
   SDK unable to start, when the brief uses it).
 - The stage's goal works, checked by playing it (and by the automated tests, once there are some).
+- Names, chat, saves, loaded files and peer messages are shown only as text, checked before use,
+  and never run as code (SKILL.md, "Rules for the build"). A search of the game's own source for
+  `innerHTML`, `insertAdjacentHTML`, `eval` and `new Function` finds none fed by them.
 - The brief still matches the game.
 
 ## Talking to the developer

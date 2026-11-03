@@ -102,10 +102,14 @@ forever on a plan it can't load. Add a hash of the shared tables:
 ## Lobby look and live previews
 
 Send a `look` (name, level, cosmetics) on connect and whenever it changes. Show the friend's
-avatar in the lobby with their name tag as `NAME [LV n]`.
+avatar in the lobby with their name tag as `NAME [LV n]`, built from the cleaned name and a
+clamped level and shown as text. Read only the look's known fields into a new object; never
+merge the received look over the old one.
 
 While a player browses cosmetics, send `preview` messages (cosmetic id plus a color value) so
-the friend sees them try things on. Throttle to changes, not frames.
+the friend sees them try things on. Throttle to changes, not frames. The id is looked up in
+your own table and the color is a palette index or a checked `#rrggbb` string, never a CSS
+value passed through (see "Validating peer input" in `security.md`).
 
 ## Ready-up
 
@@ -161,6 +165,10 @@ A dropped guest normally has to ask again and wait for approval. To let them bac
 - A matching token inside the window skips the approval prompt (still version-checked) and
   restores the slot: avatar, downed state, rewards so far. Anything else goes through
   normal approval. Tokens are single use; a kick revokes the token.
+- Check the token's shape first (the characters and length your tokens have, such as
+  `cleanId(token, 64)`, not empty) and keep the host's tokens in
+  a `Map`. A lookup on a plain object (`tokens[message.token]`) finds `__proto__` and
+  `constructor` too, which would skip approval.
 - The rejoining guest has a new peer ID. The host maps the token back to the old seat
   (`rejoinOf = oldId`) and moves the seat's state to the new ID; key game state by seat,
   not by peer ID, and this is one line.

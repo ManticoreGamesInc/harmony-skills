@@ -17,7 +17,7 @@ export function resetMockPeers() {
 
 class Emitter {
 	constructor() {
-		this.handlers = {};
+		this.handlers = Object.create(null);   // no inherited keys such as "constructor"
 	}
 
 	on(type, fn) {

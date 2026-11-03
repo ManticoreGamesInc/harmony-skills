@@ -76,12 +76,16 @@ Names from Harmony (`displayName`, a friend's `currentGame`), messages in the ga
 and anything players type can be in any script, in either direction, whatever language the game
 is in.
 
-- Never translate or change them, and always show them as text (`textContent` or the engine's
-  text call), never HTML.
+- Never translate them, and always show them as text (`textContent` or the engine's plain text
+  object with rich text off), never HTML, also when they sit inside a translated sentence.
+- Clean names before showing them: keep letters, marks, digits, spaces and `.`, `_`, `-`, which
+  drops bidi overrides (U+202E), zero-width characters and line breaks, and cap the length by
+  code point (`Array.from(name).slice(0, 16)`), so a name can't reverse or break the text
+  around it. Cleaning removes characters; it never rewrites or translates what's left.
 - Isolate them so a right-to-left name doesn't reorder the sentence around it:
   - HTML: `<bdi>` around the name, or `dir="auto"` on the element that holds only the name.
   - Canvas and engines: wrap the name in the Unicode isolate marks U+2068 and U+2069
-    (`"⁨" + name + "⁩"`) before putting it in a sentence.
+    (`"\u2068" + name + "\u2069"`) before putting it in a sentence.
 - The font stack ends in `system-ui` so names in any script show, even in a Latin-only game.
 
 ## Text that grows

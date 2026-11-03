@@ -91,7 +91,8 @@ if (config.emblem) {
 const here = dirname(fileURLToPath(import.meta.url));
 const template = readFileSync(join(here, "lockup.html"), "utf8");
 const json = JSON.stringify(config).replace(/</g, "\\u003c");
-const html = template.replace("/*CONFIG*/null", json);
+// A function, so "$&" or "$'" in a title is kept as text instead of read as a replace pattern.
+const html = template.replace("/*CONFIG*/null", () => json);
 
 // One work folder per user (with the browser profile) is reused across runs, so nothing piles
 // up. It must be ours and private: on a shared /tmp another user could have made it first.

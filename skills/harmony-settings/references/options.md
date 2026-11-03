@@ -112,6 +112,8 @@ onSettingsChanged((s) => {
   exists (Chromium), else a readable name from the code (`KeyW` -> "W", `ArrowUp` -> "↑").
   Browsers can refuse the layout map in a frame on another site, as a hosted game is, so wrap
   the call in `try`/`catch` (it returns a promise that can reject) and fall back to the code's name.
+  Show key names and binding labels with `textContent` or the engine's plain text object; a code
+  read from storage is checked like any other setting (`store.md`) before it's used.
 - Controller buttons by the standard mapping's index (`pad:0` is the bottom face button).
   Show the right labels for the controller in use: A, B, X, Y for Xbox-style pads; Cross,
   Circle, Square, Triangle for PlayStation-style; guess from `gamepad.id` and offer a choice.
@@ -134,7 +136,11 @@ controls. Preview them over the game while adjusting.
 ## Accessibility
 
 - **Text size:** scales all interface text (a CSS variable on the root, and a multiplier for
-  canvas text), 100% to 150%. Layouts must grow with it.
+  canvas text), 100% to 150%. Layouts must grow with it. Set the variable from the clamped
+  number only: `root.style.setProperty("--text-scale", String(s.accessibility.textScale))`.
+- Color-blind palettes are the game's own token sets, chosen by the saved mode's name from the
+  allowed list (`root.dataset.colorMode = s.accessibility.colorMode`); colors are never read
+  from storage.
 - **Color-blind mode:** never let color alone carry meaning; add a shape, icon, pattern or
   label to every color that matters (teams, matches, good and bad pickups). Then offer palettes
   tuned so those colors stay apart for each kind of color blindness (protanopia, deuteranopia,
@@ -153,7 +159,9 @@ controls. Preview them over the game while adjusting.
 ## General
 
 - **Language:** each language in its own name ("Deutsch", "日本語"), plus "Automatic" (from
-  the browser). Applies at once.
+  the browser). Applies at once. The saved code, and any code from the browser, is matched
+  against the game's own list of languages before it sets the page's `lang` and `dir` or picks
+  a language file; anything else means the default, so a value like `../x` never reaches a path.
 - **Save backup:** Export and Import save buttons if the game keeps progress, with a line saying
   saves stay in this browser otherwise. Without the Harmony SDK they use a download and a file
   picked with `<input type="file">`, which both work in a game hosted on Harmony; Harmony's Save

@@ -209,7 +209,8 @@ function parseSaveFile(raw: unknown): Save | null {
     return null;
   }
   const file = raw as Partial<SaveFile>;
-  if (file.game !== SAVE_PREFIX || typeof file.version !== "number") {
+  // A whole number from 0 up, so it can only pick a real step in MIGRATIONS.
+  if (file.game !== SAVE_PREFIX || typeof file.version !== "number" || !Number.isInteger(file.version) || file.version < 0) {
     return null;
   }
   if (file.version > SAVE_VERSION) {
@@ -223,8 +224,57 @@ function parseSaveFile(raw: unknown): Save | null {
 
 - numbers: finite, clamped to the range the game allows, floored where they count things;
 - ids (owned cosmetics, equipped items, upgrade tiers): kept only when the game knows them;
-- strings: trimmed to a length cap;
+- strings: trimmed to a length cap, and shown only as text;
+- keys: the game's own lists (stat names, slots, upgrade ids) decide which keys are read, never
+  the keys in the file, and nothing from the file is merged in with `Object.assign`, spread or a
+  deep merge, so a `__proto__` or `constructor` key does nothing;
 - anything missing or wrong: the default.
+
+```ts
+const STAT_KEYS = ["rounds", "wins", "bestScore"];      // the game's own career stats
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function count(value: unknown, max: number, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(0, Math.floor(value))) : fallback;
+}
+
+function parseSave(raw: unknown): Save | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const save = defaultSave();                           // starters owned and equipped
+  const stats: Record<string, unknown> = isRecord(raw.stats) ? raw.stats : {};
+  for (const key of STAT_KEYS) {                        // the game's keys, never the file's
+    save.stats[key] = count(stats[key], 1e9, 0);
+  }
+  const p: Record<string, unknown> = isRecord(raw.progress) ? raw.progress : {};
+  const out = save.progress;
+  out.level = Math.max(1, count(p.level, MAX_LEVEL, 1));
+  out.xp = count(p.xp, xpForLevel(out.level), 0);
+  out.currency = count(p.currency, 1e9, 0);
+  const owned: unknown[] = Array.isArray(p.owned) ? p.owned.slice(0, 1000) : [];
+  for (const id of owned) {
+    if (typeof id === "string" && COSMETICS.some((item) => item.id === id) && !out.owned.includes(id)) {
+      out.owned.push(id);
+    }
+  }
+  const equipped: Record<string, unknown> = isRecord(p.equipped) ? p.equipped : {};
+  for (const slot of SLOTS) {
+    const id = equipped[slot];
+    if (typeof id === "string" && out.owned.includes(id) && cosmetic(id, slot).id === id) {
+      out.equipped[slot] = id;
+    }
+  }
+  const tiers: Record<string, unknown> = isRecord(p.upgrades) ? p.upgrades : {};
+  for (const upgrade of UPGRADES) {
+    out.upgrades[upgrade.id] = count(tiers[upgrade.id], MAX_TIER, 0);
+  }
+  return save;
+}
+```
 
 A broken field costs that field, never the whole save. A save that won't parse at all is copied
 to a `.broken` key by `keepBroken` before anything writes over it, so a bug fix can still
@@ -238,7 +288,12 @@ Bump `SAVE_VERSION` whenever the shape changes, and add one migration per step:
 // MIGRATIONS[n] turns version n data into version n + 1.
 const MIGRATIONS: Array<(data: any) => any> = [
   (data) => data,                                            // 0 -> 1: placeholder
-  // (data) => ({ ...data, progress: { ...data.progress, currency: data.progress.coins } }),
+  // 1 -> 2, renaming coins to currency: name each field, never spread the old object.
+  // (data) => {
+  //   const p = data?.progress;
+  //   return { stats: data?.stats, progress: { xp: p?.xp, level: p?.level, currency: p?.coins,
+  //     owned: p?.owned, equipped: p?.equipped, upgrades: p?.upgrades } };
+  // },
 ];
 
 function migrate(from: number, data: unknown): unknown {
@@ -251,6 +306,10 @@ function migrate(from: number, data: unknown): unknown {
 ```
 
 - Migrations only reshape; `parseSave` still checks the result.
+- The steps live in an array indexed by the version number, which `parseSaveFile` has checked is
+  a whole number from 0 up to `SAVE_VERSION`. Never pick a step, a reviver or a handler by a
+  string from the file on a plain object (`handlers[file.type]`), where `__proto__` or
+  `constructor` would select something; use a `Map` or a fixed list.
 - **A newer save than the build:** a player with an old tab open, after an update in another
   tab, would write an old-format save over the new one. When `version > SAVE_VERSION`,
   `loadFor` sets `saveLocked`, `writeSave` refuses to write, and `showReloadNotice` says "This
@@ -428,6 +487,7 @@ importButton.addEventListener("click", async () => {
 ```
 
 - An imported file is as untrusted as any save: size cap, then the same `parseSaveFile`.
-- Always confirm before replacing progress, and show the file's name as text if you show it.
+- Always confirm before replacing progress, and show the file's name as text if you show it
+  (`textContent`, control characters stripped, length capped).
 - With the SDK, handle `"cancelled"` by doing nothing, and `"downloaded"` (Firefox and Safari
   have no save dialog) with a short note.

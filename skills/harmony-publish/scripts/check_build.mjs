@@ -12,12 +12,18 @@
 // - a service worker is registered
 // - the browser's own file pickers (showSaveFilePicker, showOpenFilePicker, showDirectoryPicker)
 // - dev cheats (the "__DEV_CHEATS__" marker) left in the build
+// - a zip entry whose path leaves the top folder ("..", a leading "/" or a drive letter)
 // Warnings (check by hand):
 // - a file is loaded by an address starting with "/" instead of a relative one
 // - the clipboard is read (navigator.clipboard.readText / read)
 // - a web app manifest (PWA leftovers)
 // - addresses pointing at localhost
 // It also prints the file count and total size, to compare with the limits shown in My Creations.
+//
+// It never runs, imports or extracts anything from the build: files are read as text and matched
+// against patterns, zip entries are inflated in memory with a size cap, and folder links
+// (symlinks, junctions) are skipped. File names from the build are printed with control and
+// bidirectional characters replaced, so a crafted name can't drive the terminal.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, extname, join, relative, sep } from "node:path";
@@ -70,6 +76,12 @@ const ABSOLUTE_PATTERNS = [
 	/\bfrom\s+["']\/(?!\/)/,
 ];
 
+// Control characters (terminal escapes) and bidirectional overrides in a file name could rewrite
+// what the terminal shows; they print as "?".
+function printable(text) {
+	return String(text).replace(/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "?");
+}
+
 function usage() {
 	console.error("usage: node check_build.mjs <build folder | game.html | game.zip> [--json]");
 	process.exit(2);
@@ -92,8 +104,10 @@ function listFolder(folder) {
 	return out;
 }
 
-// Zip entry names written with "\" separators, reported as an error after reading.
+// Zip entry names written with "\" separators, and names that leave the top folder, reported as
+// errors after reading.
 const backslashNames = [];
+const escapingNames = [];
 
 // Reads a zip's central directory; entries are stored or deflated.
 function listZip(path) {
@@ -127,6 +141,9 @@ function listZip(path) {
 			backslashNames.push(rawName);        // some zip tools write Windows separators
 		}
 		const name = rawName.replace(/\\/g, "/");
+		if (/^\/|^[a-z]:/i.test(name) || name.split("/").includes("..")) {
+			escapingNames.push(name);
+		}
 		at += 46 + nameLength + extraLength + commentLength;
 		if (name.endsWith("/")) {
 			continue;
@@ -222,6 +239,10 @@ function main() {
 		findings.push({ level: "error", id: "zip-backslash", file: backslashNames[0], line: 0, message: "The zip stores paths with \\ instead of / (" + backslashNames.length + " entries), which breaks on other systems. Zip it again with tar or Python (see packaging.md)." });
 	}
 
+	if (escapingNames.length) {
+		findings.push({ level: "error", id: "zip-path", file: escapingNames[0], line: 0, message: "The zip has paths that leave its top folder (" + escapingNames.length + " entries with \"..\", a leading \"/\" or a drive letter). Zip again from inside the build folder (see packaging.md)." });
+	}
+
 	for (const file of files) {
 		const type = extname(file.name).toLowerCase();
 		if (!SCAN_TYPES.has(type)) {
@@ -250,7 +271,7 @@ function main() {
 	} else {
 		for (const f of [...errors, ...warnings]) {
 			const where = f.line ? f.file + ":" + f.line : f.file;
-			console.log((f.level === "error" ? "ERROR  " : "WARN   ") + where + "  " + f.message);
+			console.log((f.level === "error" ? "ERROR  " : "WARN   ") + printable(where) + "  " + printable(f.message));
 		}
 		const mb = (totalBytes / (1024 * 1024)).toFixed(2);
 		console.log("");

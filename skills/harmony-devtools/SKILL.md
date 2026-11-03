@@ -70,6 +70,13 @@ report.
   optimizing it.
 - **Out of the way.** Panels are compact, collapsible, readable over any scene, and remember
   whether they were open.
+- **Outside text is text, outside input is data.** Overlays, labels, the state inspector and the
+  log show other players' names, messages and other strings from outside with `textContent`,
+  `fillText` or a panel library that sets text, never HTML. URL parameters and the console run
+  cheats only through the registry (`runCheat` with an id from its list); nothing evaluates a
+  string or looks a name up on `window` or another plain object. Peer messages never trigger a
+  cheat. The tuning writer accepts only its own page on a local host, in the file's shape, and
+  writes only that one fixed file.
 - **Separate from the game's UI style** on purpose: dev tools look like tools, so nobody mistakes
   them for game screens in screenshots or videos. Hide them with one key for captures.
 

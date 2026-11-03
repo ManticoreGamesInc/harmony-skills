@@ -76,7 +76,15 @@ report.
 - **Seeds in every report.** A failing randomized test prints its seed so the failure can be
   replayed.
 - **Hooks stay out of the shipped build**, or are inert in it: build them only in test and
-  development builds.
+  development builds, chosen by name (`import.meta.env.DEV || import.meta.env.MODE === "test"`),
+  not "anything but production". They take plain values and call the game's own functions;
+  none evaluates a string or looks up a name it was given.
+- **Hostile names.** A game that shows names (players, peers, Harmony display names, friends'
+  presence) tests them with a name holding markup, a bidi override, zero-width characters and a
+  thousand letters, and checks it shows as plain, cleaned, capped text: no element parsed, no
+  script run ([references/unit.md](references/unit.md) and the smoke test in
+  [references/browser.md](references/browser.md)). Names on screen are always set as text
+  (`textContent` or the engine's plain text object), never HTML.
 - **Fast enough to run every time:** unit tests in seconds, the smoke test in under a minute.
   Tests against the Harmony fake download it first, which can take up to 30 seconds and needs a
   network connection.
