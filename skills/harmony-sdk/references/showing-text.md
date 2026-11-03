@@ -5,7 +5,6 @@ Treat any text the SDK gives your game as written by a player or a creator. Harm
 That covers:
 
 - `displayName` and `discriminator`, for the player and each friend
-- a friend's `currentGame`, which a creator wrote freely and can hold `<`, `&` or anything else
 - the `name` of a file the player opened
 
 ## Safe ways to show it
@@ -17,7 +16,7 @@ Plain DOM: set `textContent`, and build elements instead of HTML strings.
 const friends = await harmony.friends.list();
 for (const friend of friends) {
   const line = document.createElement("li");
-  line.textContent = friend.currentGame ? `${friend.displayName} is playing ${friend.currentGame}` : friend.displayName;
+  line.textContent = friend.playingSameGame ? `${friend.displayName} is playing this game` : friend.displayName;
   line.title = friend.discriminator ? `${friend.displayName}#${friend.discriminator}` : friend.displayName;
   friendList.append(line);
 }
@@ -63,7 +62,7 @@ function forLabel(text: string, max = 64): string {
   return Array.from(oneLine).slice(0, max).join("");
 }
 
-line.textContent = `${forLabel(friend.displayName)} is playing ${forLabel(friend.currentGame ?? "")}`;
+line.textContent = forLabel(friend.displayName);
 ```
 
 Show the `discriminator` tag beside the name wherever players need telling apart.

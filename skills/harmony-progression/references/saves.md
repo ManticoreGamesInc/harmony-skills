@@ -52,7 +52,7 @@ const SAVE_PREFIX = "star-hopper";   // your game's own name for its saves (not 
 const SAVE_VERSION = 1;
 
 // With the SDK: "player:<accountId>" for a Harmony guest or account, "device" otherwise.
-function ownerOf(session: AuthSession | null): string {
+function ownerOf(session: PlayerSession | null): string {
   if (session && (session.kind === "account" || session.kind === "guest")) {
     return "player:" + session.accountId;
   }
@@ -104,7 +104,7 @@ function useOwner(next: string): void {
   showProgress(save);
 }
 
-attach({ gameId: "YOUR_GAME_ID", container })
+attach()
   .then(async (handle) => {
     harmony = handle;
     useOwner(ownerOf(await handle.auth.getSession()));
@@ -116,8 +116,7 @@ startGame();
 ```
 
 A game with no build step loads Harmony with a script tag, and `PlayHarmony.attach` there
-returns the handle itself, not a promise (sdk.md shows how): run the same steps on that handle,
-and use `"device"` when it is missing.
+can return a promise while the SDK loads. Use `Promise.resolve(PlayHarmony.attach())` (sdk.md shows how), run the same steps on the resolved handle, and use `"device"` if it fails.
 
 When the round ends and `save` is still `null`, push the result onto `heldResults` and show the
 results screen without the totals. Without the SDK, `save` is set before the first round, so

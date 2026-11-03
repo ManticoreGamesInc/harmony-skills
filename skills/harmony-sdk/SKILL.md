@@ -50,7 +50,7 @@ Once a game attaches to Harmony itself, Harmony sees this on upload and doesn't 
 Ask in one round, and only what the game's code and design brief (`docs/design.md`, if there is one) don't already answer:
 
 - **Which features the game uses:** the player's name, friends and presence, a button that opens the overlay, pausing while the overlay is open, file dialogs. Recommended: only the features the game's design uses. With none, don't add the SDK, and stop here.
-- **The Game ID,** only when the game uses at least one feature. It is on the game's page in My Creations on Harmony. There is no default; never invent one. If they don't have it yet, put the placeholder `YOUR_GAME_ID` in one constant and list it as open when you finish.
+- **The Game ID,** only for a standalone real game. Hosted games and the fake can call `attach()` without options. It is on the game's page in My Creations on Harmony. There is no default; never invent one. If they don't have it yet, put the placeholder `YOUR_GAME_ID` in one constant and list it as open when you finish.
 
 Don't ask whether the game uses Shift+Tab: search its input code. If the developer says "you decide", use the recommendation and say which features you picked.
 
@@ -61,7 +61,7 @@ The SDK comes two ways, with the same options and the same handle:
 - **The package,** `attach` from `@playharmony/sdk`, for a game built with a bundler such as Vite or webpack. Use it when the game has a `package.json` and a build step.
 - **A script tag,** `PlayHarmony.attach` from Harmony's loader, for a game with no build step, such as plain HTML and JavaScript files. Use it when the game has no bundler, rather than adding one.
 
-Either way, attach once, as the page loads. It connects the game to Harmony, adds the overlay over the game's container, and gives back the handle used for every other call. Start the game without waiting for it, and catch failures so the game plays on without Harmony's features: every feature that uses the handle has to cope with it being `null`.
+Either way, attach once, as the page loads. Hosted games and the fake need no options. A standalone real game requires its Game ID and a connected container. It connects the game to Harmony, adds the overlay over the game's container, and gives back the handle used for every other call. Start the game without waiting for it, and catch failures so the game plays on without Harmony's features: every feature that uses the handle has to cope with it being `null`.
 
 ### With the package
 
@@ -76,17 +76,11 @@ This installs the latest version. Update it when a new one comes out: `npm insta
 ```ts
 import { attach, type GameServicesHandle } from "@playharmony/sdk";
 
-// In the page from the start, around the title screen and canvas.
-const container = document.getElementById("game") as HTMLElement;
-
+// Hosted games and the fake need no options.
 // Set once Harmony is ready. Stays null if it can't start.
 let harmony: GameServicesHandle | null = null;
 
-attach({
-  gameId: "YOUR_GAME_ID",
-  container,
-  gameInfo: { name: "Star Hopper" },
-})
+attach()
   .then((handle) => {
     harmony = handle;
     // onHarmonyReady is your own: read the session, listen to the overlay.
@@ -103,57 +97,27 @@ startGame();
 
 ### With a script tag
 
-Load Harmony's loader first in `<head>`, then attach through the `PlayHarmony` global. `PlayHarmony.attach` takes the same options and returns the handle itself, not a promise. The loader can arrive after the game's own script, so wait for the global, and give up after a while so the game plays on without it. A sign-in window returns to the game's page to finish sign-in, with `window.__MANTICORE_AUTH_RETURN__` set: don't start the game in that window. The attach code can go in an inline script at the end of `<body>` or in the game's own script file.
+Load Harmony's loader first in `<head>`, then attach through the `PlayHarmony` global. `PlayHarmony.attach` is available immediately after the loader. It returns a promise while the SDK loads, or a handle when already loaded. Use `Promise.resolve` for either result and catch failures. A sign-in window returns to the game's page to finish sign-in, with `window.__MANTICORE_AUTH_RETURN__` set: don't start the game in that window. The attach code can go in an inline script at the end of `<body>` or in the game's own script file.
 
 ```html
 <!-- First in <head>: -->
 <script src="https://cdn.playharmony.ai/v1/loader.js"></script>
 
-<!-- At the end of <body>, after the game's element exists. -->
+<!-- At the end of <body>, after the game's element exists. startGame is your own. -->
 <script>
-  const gameRoot = document.getElementById("game");
-
-  // Set once Harmony is ready. Stays null if it can't start.
-  let harmony = null;
-
-  // Resolves with the PlayHarmony global once the loader has run, or null after timeoutMs.
-  function whenHarmonyLoads(timeoutMs) {
-    return new Promise((resolve) => {
-      const startedAtMs = performance.now();
-      (function poll() {
-        if (window.PlayHarmony) {
-          return resolve(window.PlayHarmony);
-        }
-        if (performance.now() - startedAtMs > timeoutMs) {
-          return resolve(null);
-        }
-        setTimeout(poll, 50);
-      })();
-    });
-  }
-
   // A sign-in window returning to this page finishes sign-in; it doesn't start the game.
   if (!window.__MANTICORE_AUTH_RETURN__) {
-    // startGame is your own. It runs now, without waiting for Harmony.
     startGame();
-    whenHarmonyLoads(15000).then((PlayHarmony) => {
-      if (!PlayHarmony) {
-        console.warn("Harmony is not available");
-        return;
-      }
-      try {
-        harmony = PlayHarmony.attach({
-          gameId: "YOUR_GAME_ID",
-          container: gameRoot,
-          gameInfo: { name: "Star Hopper" },
-        });
-        // onHarmonyReady is your own: read the session, listen to the overlay.
-        onHarmonyReady(harmony);
-      } catch (error) {
-        // The game plays on without Harmony's features.
-        console.warn("Harmony is not available", error);
-      }
-    });
+    try {
+      Promise.resolve(PlayHarmony.attach()).then(
+        (harmony) => {
+          // Read the session and subscribe to the overlay here.
+        },
+        (error) => console.warn("Harmony is not available", error),
+      );
+    } catch (error) {
+      console.warn("Harmony is not available", error);
+    }
   }
 </script>
 ```
@@ -162,8 +126,8 @@ While developing, the page loads the fake loader in place of this one: see [Test
 
 ### For both
 
-- `gameId` is the Game ID from the game's page in My Creations on Harmony. Ask the developer for it. Never invent one.
-- `container` is the element the game runs in, in this page: a wrapper around the game, or its canvas. Never `document.body` or `<html>`, so a full-page game needs a wrapper of its own. It must be in the page when you attach.
+- `gameId` is required only for standalone real games. Ask for their Game ID from My Creations; never invent one. Hosted games use host metadata and the fake supplies a development ID.
+- `container` defaults to the document in hosted games and the fake. Standalone real games require a connected wrapper or canvas, never `document.body` or `<html>`.
 - Attach as the page loads, not after a title screen or menu, since a sign-in returns to the game's page to finish. If the canvas comes later, attach to a wrapper element that is in the page from the start, and put the title screen and canvas inside it.
 - Import the SDK before any code that changes the page's address, such as a client-side router: sign-in returns to the address the game started at.
 - Keep the handle as it is. The handle and its `auth`, `friends` and `files` are frozen: don't add fields to it, and keep it out of stores that wrap objects in deep proxies, such as Solid's `createStore` or MobX's `observable`.
@@ -171,7 +135,7 @@ While developing, the page loads the fake loader in place of this one: see [Test
 
 ## Show text from Harmony as text, never as HTML
 
-Treat any text the SDK gives your game as written by a player or a creator. Harmony passes it on exactly as written: plain text, never HTML. That covers display names, tags, game titles in `currentGame`, and file names.
+Treat any text the SDK gives your game as written by a player or a creator. Harmony passes it on exactly as written: plain text, never HTML. That covers display names, tags and file names.
 
 - Put text on the page with `textContent`, or draw it with the canvas's or engine's text call, such as `fillText`.
 - Never pass it to `innerHTML`, `outerHTML`, `insertAdjacentHTML` or `document.write`, and never build HTML from it with strings. Text such as `<img src=x onerror="…">` runs as code there, inside the game.
@@ -198,8 +162,7 @@ See [references/showing-text.md](references/showing-text.md) for examples in pla
 - **Don't fight the overlay's hotkey.** Shift+Tab opens the overlay by default. If the game uses Shift+Tab, pass a different `hotkey` to `attach`, or `null` to turn it off and open the overlay from the game's own button.
 - **File dialogs need a player action.** Call `files.save` and `files.open` from a click or key handler. Called at any other time, a first save downloads the file instead, and an open fails. Firefox and Safari have no save dialog, so there a save always downloads. Handle the `"cancelled"` and `"downloaded"` outcomes, and catch rejections: each has a `code` (`"no_user_activation"`, `"busy"`, `"file_not_found"`, `"file_too_large"` and others) listed in [references/api.md](references/api.md).
 - **Check files the player opens.** The player can pick any file. Validate `data` before using it: copy each known field, checked, into a new object, and never merge the parsed data over the game's state or defaults with `Object.assign`, spread or a deep merge. Show its `name` as text. Stored saves in `localStorage` get the same checks.
-- **Use `currentGame` only for display.** Creators write game titles freely. Never compare a friend's `currentGame` to decide whether they are in your game.
-- **Compare `currentGameId` to find friends in your game.** A friend whose `currentGameId` equals the game's own `gameId` is in it. When `currentGameId` is absent, Harmony doesn't know: treat it as unknown, never as a different game.
+- **Use `playingSameGame` to find friends visibly playing this game.** Titles and other activity remain inside the overlay.
 - **Every listener returns a stop function.** Call it when the screen or component that listens goes away.
 - **No call reports the SDK's version.** It is in the browser console on every attach, and in the overlay's About dialog, opened from the Harmony mark in its header.
 
@@ -224,11 +187,11 @@ The overlay uses Harmony's light theme by default. To match it to the game's pal
 - With a script tag, check the page loads `loader.js`, not `fake-loader.js`, before the game is uploaded.
 - The fake has no sign-in, so sign-in is tested on Harmony. After upload, test as a guest and with an account: the name, friends, pausing on Shift+Tab, and any file dialogs.
 
-When you finish, tell the developer which features you added (or that the game doesn't need the SDK), the SDK version installed (with a script tag, the console shows it on attach), that they should update it when a new one comes out, whether the Game ID is still a placeholder, and what to test on Harmony.
+When you finish, tell the developer which features you added (or that the game doesn't need the SDK), the SDK version installed (with a script tag, the console shows it on attach), that they should update it when a new one comes out, whether a standalone real game still needs its Game ID, and what to test on Harmony.
 
 ## Upload to Harmony
 
-Upload the game from My Creations on Harmony, as one `.html` file or as a `.zip` of a web build with its `index.html` at the root of the zip. Any engine that exports to the web works. The game runs in a frame on an address of its own, with the overlay in the page around it. A game without the SDK uploads the same way; the Game ID matters only to `attach`.
+Upload the game from My Creations on Harmony, as one `.html` file or as a `.zip` of a web build with its `index.html` at the root of the zip. Any engine that exports to the web works. The game runs in a frame on an address of its own, with the overlay in the page around it. A game without the SDK uploads the same way; a Game ID is required only for standalone real games.
 
 ## API reference
 

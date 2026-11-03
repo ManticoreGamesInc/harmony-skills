@@ -149,8 +149,7 @@ public class FriendInfo {
     public string displayName;
     public string discriminator;
     public bool online;
-    public string currentGame;
-    public string currentGameId;   // empty means unknown, never a different game
+    public bool playingSameGame;
 }
 
 public interface IGameServices {
@@ -325,8 +324,8 @@ public class FakeServicesSettings : ScriptableObject {
     public KeyCode overlayKey = KeyCode.F10;
     public KeyCode nextSessionKey = KeyCode.F9;
     public FriendInfo[] friends = {
-        new FriendInfo { accountId = "fake-friend-1", displayName = "Mina", discriminator = "4F2A", online = true, currentGame = "Star Hopper", currentGameId = "YOUR_GAME_ID" },
-        new FriendInfo { accountId = "fake-friend-2", displayName = "<b>Rex</b>", discriminator = "9KQ1", online = false, currentGame = "", currentGameId = "" },
+        new FriendInfo { accountId = "fake-friend-1", displayName = "Mina", discriminator = "4F2A", online = true, playingSameGame = true },
+        new FriendInfo { accountId = "fake-friend-2", displayName = "<b>Rex</b>", discriminator = "9KQ1", online = false, playingSameGame = false },
     };
 }
 ```
@@ -336,8 +335,7 @@ Every Unity text system parses rich text by default, and each has its own switch
 `richText = false`, uGUI `Text.supportRichText = false`, and UI Toolkit
 `Label.enableRichText = false`. Turn it off on every label that shows a name, a game title, a file
 name or anything a peer sent.
-Set the first friend's `currentGameId` to the game's own Game ID, so the fake has a friend in this
-game.
+Set the first friend's `playingSameGame` to true, so the fake has a friend visibly in this game.
 
 ```csharp
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -526,9 +524,7 @@ private void OnSession(ServicesEvent session) {
   `StarHopperServices.Open()`.
 - For a sign-in button of the game's own, call `StarHopperServices.SignIn()` from its click; a
   `session` event follows when sign-in ends. Without one, players sign in from the overlay.
-- `currentGame` is display text; never compare it to decide anything. To tell whether a friend is
-  in this game, compare `currentGameId` with the Game ID (`GAME_ID` in the JavaScript file); empty
-  means unknown, never a different game.
+- Use `playingSameGame` to tell whether a friend is visibly playing this game. Titles and other activity stay inside the overlay.
 - A file from `FileOpened` is whatever the player picked: parse it into a class with only the
   fields you expect, check every field, and show its name with rich text off.
 - Data from the JavaScript side never chooses code: no `Application.ExternalEval`, no `eval` or

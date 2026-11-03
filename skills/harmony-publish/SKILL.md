@@ -16,8 +16,8 @@ so the developer only has to copy them across. It never uploads: hand the develo
 tell them where to upload them.
 
 A game doesn't need the Harmony SDK or a Game ID to be uploaded. Harmony adds its overlay
-(sign-in, friends, chat, the badge and Shift+Tab) to every game it hosts, with no code. The Game
-ID matters only to a game that uses the SDK (see the `harmony-sdk` skill).
+(sign-in, friends, chat, the badge and Shift+Tab) to every game it hosts, with no code. A Game
+ID is required only for a standalone real game that uses the SDK (see the `harmony-sdk` skill).
 
 Harmony's own guide is the "Preparing your game for upload" section of
 https://playharmony.ai/developers/sdk.md. Read it when you can reach it, and where the two

@@ -216,8 +216,8 @@ extends Resource
 @export var overlay_key: Key = KEY_F10
 @export var next_session_key: Key = KEY_F9
 @export var friends: Array[Dictionary] = [
-	{"accountId": "fake-friend-1", "displayName": "Mina", "discriminator": "4F2A", "online": true, "currentGame": "Star Hopper", "currentGameId": "YOUR_GAME_ID"},
-	{"accountId": "fake-friend-2", "displayName": "[b]Rex[/b]", "discriminator": "9KQ1", "online": false, "currentGame": "", "currentGameId": ""},
+	{"accountId": "fake-friend-1", "displayName": "Mina", "discriminator": "4F2A", "online": true, "playingSameGame": true},
+	{"accountId": "fake-friend-2", "displayName": "[b]Rex[/b]", "discriminator": "9KQ1", "online": false, "playingSameGame": false},
 ]
 ```
 
@@ -225,8 +225,7 @@ The second friend's name is deliberately BBCode, so a label with BBCode on shows
 Show names, game titles, file names and anything a peer sent in a plain `Label`, which never
 parses BBCode. Where a `RichTextLabel` is needed, keep `bbcode_enabled` off for that text, or
 escape it before adding it. Set
-the first friend's `currentGameId` to the game's own Game ID, so the fake has a friend in this
-game.
+the first friend's `playingSameGame` to true, so the fake has a friend visibly in this game.
 Save one as `res://fake_services/fake_services_settings.tres` and edit it in the Inspector.
 
 `fake_services/fake_game_services.gd`:
@@ -377,9 +376,7 @@ func _on_session_changed(new_session: Dictionary) -> void:
 - For a sign-in button of the game's own, call `StarHopperServices.sign_in()` from its `pressed`
   signal; a `session_changed` signal follows when sign-in ends. Without one, players sign in from
   the overlay.
-- `currentGame` is display text; never compare it to decide anything. To tell whether a friend is
-  in this game, compare `currentGameId` with the Game ID (`GAME_ID` in the JavaScript file); empty
-  means unknown, never a different game.
+- Use `playingSameGame` to tell whether a friend is visibly playing this game. Titles and other activity stay inside the overlay.
 - A file from `file_opened` is whatever the player picked: parse it, check every field's type
   and range, and show its name in a plain `Label`.
 - Data reaches JavaScript only through `get_interface` calls and callbacks, as above. Never

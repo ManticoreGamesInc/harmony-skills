@@ -39,9 +39,8 @@ Upload limits (the game file's size and file count) are shown on the form, so do
 state them. The media slots' sizes and formats are fixed rules on the form, and the store media
 step follows them; where the form shows something different, the form wins.
 
-After the game is created, its page in My Creations shows its Game ID. Only a game that uses
-the Harmony SDK needs it, in its `attach` call (`PlayHarmony.attach` in a game that loads the
-SDK with a script tag). A game without the SDK needs no Game ID, before or after uploading.
+After the game is created, its page in My Creations shows its Game ID. Only a standalone real game using
+the Harmony SDK needs to pass it to `attach` (`PlayHarmony.attach` with a script tag). Hosted games and the fake can call `attach()` without options.
 
 ### Title
 
@@ -182,7 +181,7 @@ release/<game>-<version>.zip  (<files> files, <MB> MB unpacked; compare with the
 
 ## After uploading
 - Play the game on Harmony once before sharing it.
-- Only if the game uses the Harmony SDK: the game's page in My Creations shows its Game ID. If
+- Only for a standalone real game using the Harmony SDK: the game's page in My Creations shows its Game ID. If
   the code still has the placeholder `YOUR_GAME_ID`, put the ID in, rebuild, and upload it as a
   new version.
 ```

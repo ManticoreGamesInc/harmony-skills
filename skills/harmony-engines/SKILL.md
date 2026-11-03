@@ -33,8 +33,8 @@ a rebuild; when sdk.md changes, check the bridge's calls against it.
    - **Harmony features, or only hosting?** The player's name, friends, a button that opens the
      overlay or signs in, pausing while the overlay is open, files. Recommended: only hosting,
      unless the game's design uses one of these; the bridge can be added later.
-   - **The Game ID** (from the game's page in My Creations on Harmony), only if the game wants
-     features. Never invent one; if they don't have it yet, use the placeholder `YOUR_GAME_ID`
+   - **The Game ID** (from My Creations), only for a standalone real game. Hosted games and the
+     fake attach without it. Never invent one; if they don't have it yet, use the placeholder `YOUR_GAME_ID`
      and list it as open when you finish.
 
    If the developer says "you decide", take the recommendation and say so.
@@ -51,7 +51,7 @@ a rebuild; when sdk.md changes, check the bridge's calls against it.
 6. **Test** as in [Testing](#testing), then **package**: zip what's inside the build folder so
    `index.html` is at the top of the zip.
 7. **Hand over:** tell the developer the zip's path and the settings you changed. With the
-   bridge, add which features it has, whether the Game ID is still a placeholder, and that the
+   bridge, add which features it has, whether a standalone real game still needs its Game ID, and that the
    loader script keeps the SDK current, so they only need to check sdk.md for new calls the game
    could use. They upload the zip from My Creations; a game without the bridge needs no Game ID.
 
@@ -81,8 +81,7 @@ Every engine's bridge follows the same rules:
 - **Guests have no friends list.** Check the session is an account before asking for friends (the
   bridge answers a guest with `friendsFailed`); offer a guest a button that opens the overlay, or
   one that signs in, instead.
-- **Friends in this game.** Compare a friend's `currentGameId` with the game's Game ID; empty
-  means unknown. Never compare the `currentGame` title.
+- **Friends in this game.** Use `playingSameGame`; titles and other activity stay inside the overlay.
 - **Stay on the latest SDK.** Load the SDK from Harmony's loader script
   (`https://cdn.playharmony.ai/v1/loader.js`), never a copied or bundled one, so the game gets
   each new SDK without a rebuild. New calls arrive often, so check sdk.md for any the game could
@@ -97,7 +96,7 @@ build:
 
 - signed-out, guest and account sessions, switchable in the editor and with a key while playing;
 - session changes, raised when the setting changes, and sign-in from the game's own button;
-- a sample friends list with the documented shapes (`online`, `currentGame`, `currentGameId`),
+- a sample friends list with the documented shapes (`online`, `playingSameGame`),
   one friend in this game and one name containing markup to catch labels with rich text on;
 - friends failing for guests and signed-out players, as on Harmony;
 - the overlay opening and closing from a key, to test pausing and resuming;

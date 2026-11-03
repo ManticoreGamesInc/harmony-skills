@@ -182,6 +182,5 @@ test("the game attaches to Harmony", async () => {
   resolves to in the game), then pass it the handle from `attachFake` in the test: for example,
   that the game pauses when the overlay opens, or keys a save on the session's `accountId`.
 - Call `harmony.detach()` at the end of each test, so the next one starts clean.
-- Use the Game ID the game passes to `attach`, or the placeholder `YOUR_GAME_ID` if it doesn't
-  have one yet.
+- The fake can call `attach()` without options. Pass explicit options when testing a standalone real game's integration.
 - The harmony-sdk skill lists every call the handle has and what each one returns.
