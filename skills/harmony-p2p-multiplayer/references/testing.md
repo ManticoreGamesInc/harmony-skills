@@ -122,8 +122,8 @@ look and hostile messages, then play through the lobby, the match and the result
 const HOSTILE_NAMES = [
 	"<img src=x onerror=\"window.__pwned = true\">",
 	"x".repeat(500),
-	"‮evil",                       // right-to-left override
-	"zero​width\nnew line",
+	"\u202eevil",                       // right-to-left override
+	"zero\u200bwidth\nnew line",
 	"__proto__",
 ];
 for (const name of HOSTILE_NAMES) {
