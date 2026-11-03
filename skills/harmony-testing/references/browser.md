@@ -183,9 +183,11 @@ test("loads, plays a round and shows the results with no errors", async ({ page 
   to every uploaded game, so many games never install the SDK, and this test runs them as they
   ship.
 - In a game that does use the SDK, the test build is a release build (`vite build`, whatever its
-  `--mode`), so it attaches to the real Harmony, which isn't there locally. The game must handle
-  that quietly (a `console.warn`, not `console.error`) and play on; this test proves it. Don't
-  replace the SDK with a hand-made mock to get past this.
+  `--mode`). Served locally, it doesn't get the fake: it loads the live Harmony service from the
+  CDN, which a local test can't rely on. The test doesn't depend on what Harmony does there. It
+  checks that the game starts and plays without waiting for Harmony, and that a failed attach
+  (`sdk_unavailable` when the SDK can't load) logs a `console.warn`, not a `console.error`.
+  Don't replace the SDK with a hand-made mock, and don't test Harmony features on this build.
 - The Harmony features themselves are tested against the SDK's fake: by hand on the dev server,
   which attaches to it on its own (the overlay shows `fake`), and in jsdom with
   `loadFakeGameServices` (see "Harmony SDK code" in [unit.md](unit.md)).
