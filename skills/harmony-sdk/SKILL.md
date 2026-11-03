@@ -97,7 +97,7 @@ startGame();
 
 ### With a script tag
 
-Load Harmony's loader first in `<head>`, then attach through the `PlayHarmony` global. `PlayHarmony.attach` is available immediately after the loader. It returns a promise while the SDK loads, or a handle when already loaded. Use `Promise.resolve` for either result and catch failures. A sign-in window returns to the game's page to finish sign-in, with `window.__MANTICORE_AUTH_RETURN__` set: don't start the game in that window. The attach code can go in an inline script at the end of `<body>` or in the game's own script file.
+Load Harmony's loader first in `<head>`, then attach through the `PlayHarmony` global. `PlayHarmony.attach` is available immediately after the loader. It returns a promise of the handle. Use `.then()` and `.catch()` while the game starts without waiting. A sign-in window returns to the game's page to finish sign-in, with `window.__MANTICORE_AUTH_RETURN__` set: don't start the game in that window. The attach code can go in an inline script at the end of `<body>` or in the game's own script file.
 
 ```html
 <!-- First in <head>: -->
@@ -108,15 +108,12 @@ Load Harmony's loader first in `<head>`, then attach through the `PlayHarmony` g
   // A sign-in window returning to this page finishes sign-in; it doesn't start the game.
   if (!window.__MANTICORE_AUTH_RETURN__) {
     startGame();
-    try {
-      Promise.resolve(PlayHarmony.attach()).then(
-        (harmony) => {
-          // Read the session and subscribe to the overlay here.
-        },
-        (error) => console.warn("Harmony is not available", error),
-      );
-    } catch (error) {
-      console.warn("Harmony is not available", error);
+    if (window.PlayHarmony) {
+      PlayHarmony.attach().then((harmony) => {
+        // Read the session and subscribe to the overlay here.
+      }).catch((error) => {
+        console.warn("Harmony is not available", error);
+      });
     }
   }
 </script>

@@ -99,9 +99,9 @@ loader script provides the SDK as the `PlayHarmony` global, so nothing needs bun
       }
       let handle = null;
       try {
-        // The loader may return a promise before the SDK finishes loading.
+        // Wait for the handle while the engine starts independently.
         const options = GAME_ID === "" ? undefined : { gameId: GAME_ID, container, gameInfo: { name: GAME_NAME } };
-        handle = await Promise.resolve(harmonySdk.attach(options));
+        handle = await harmonySdk.attach(options);
       } catch (error) {
         unavailable(error);
         return;
@@ -261,7 +261,7 @@ First in the page's `<head>`:
 
 - Copy the loader tag exactly: its URL is permanent. Keep it a plain script, first in `<head>`,
   with no `async`, `defer`, `type="module"` or `integrity`.
-- Normalize `PlayHarmony.attach` with `Promise.resolve`: the loader can return a promise before the SDK loads. The bridge waits for that result while the engine starts without waiting for Harmony.
+- `PlayHarmony.attach` returns a promise of the handle. The bridge waits for that result while the engine starts without waiting for Harmony.
 - The engine reference says where these tags go (Unity's WebGL template, Godot's Head Include)
   and how the file reaches the build folder.
 - The loader serves the current SDK, so the game stays on the latest version without a rebuild.

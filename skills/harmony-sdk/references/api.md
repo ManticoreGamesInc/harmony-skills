@@ -4,7 +4,7 @@ Every public call in `@playharmony/sdk`, for games that use the SDK. Most games 
 
 Use only the calls listed here. Anything else in the package is internal and can change in any release. Friend requests, chat and account changes happen in the overlay: open it with `harmony.open()` rather than building screens for them.
 
-The examples call the handle `harmony`: the value `attach` or `Promise.resolve(PlayHarmony.attach())` resolves to. Until it is set, and if it never is, `harmony` is `null`, so code that can run earlier checks it first. Names such as `game`, `nameLabel` or `showToast` stand for the game's own code.
+The examples call the handle `harmony`: the value `attach` or `PlayHarmony.attach()` resolves to. Until it is set, and if it never is, `harmony` is `null`, so code that can run earlier checks it first. Names such as `game`, `nameLabel` or `showToast` stand for the game's own code.
 
 ## Contents
 
@@ -69,12 +69,12 @@ startGame();
 ## PlayHarmony.attach, from a script tag
 
 ```ts
-PlayHarmony.attach(options?: AttachOptions): GameServicesHandle | Promise<GameServicesHandle>
+PlayHarmony.attach(options?: AttachOptions): Promise<GameServicesHandle>
 ```
 
-A game with no build step loads Harmony with a script tag instead of the package, and attaches through the `PlayHarmony` global. `PlayHarmony.attach` is available immediately after the loader. It takes the same options as `attach`; it returns a promise while the SDK loads, or a handle when already loaded. Normalize either result with `Promise.resolve` and catch failures.
+A game with no build step loads Harmony with a script tag instead of the package, and attaches through the `PlayHarmony` global. `PlayHarmony.attach` is available immediately after the loader. It takes the same options as `attach`; it returns a promise of the handle. Use `.then()` and `.catch()` while the game starts without waiting.
 
-- Put the loader first in `<head>`. It can arrive after the game's own script, so wait for `window.PlayHarmony`, and give up after a while so the game plays on without it.
+- Put the loader first in `<head>` as a plain script, without `async` or `defer`. If it fails to load, keep the game running without Harmony.
 - A sign-in window returns to the game's page to finish sign-in. There `window.__MANTICORE_AUTH_RETURN__` is set: don't start the game in that window.
 - Wrap the call in `try` and `catch`, so the game plays on if Harmony can't start.
 
@@ -87,15 +87,12 @@ A game with no build step loads Harmony with a script tag instead of the package
   // A sign-in window returning to this page finishes sign-in; it doesn't start the game.
   if (!window.__MANTICORE_AUTH_RETURN__) {
     startGame();
-    try {
-      Promise.resolve(PlayHarmony.attach()).then(
-        (harmony) => {
-          // Read the session and subscribe to the overlay here.
-        },
-        (error) => console.warn("Harmony is not available", error),
-      );
-    } catch (error) {
-      console.warn("Harmony is not available", error);
+    if (window.PlayHarmony) {
+      PlayHarmony.attach().then((harmony) => {
+        // Read the session and subscribe to the overlay here.
+      }).catch((error) => {
+        console.warn("Harmony is not available", error);
+      });
     }
   }
 </script>
