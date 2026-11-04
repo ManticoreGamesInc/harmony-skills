@@ -1,7 +1,7 @@
 ---
 name: harmony-sdk
 description: Add the Harmony SDK (@playharmony/sdk) to a web game that needs Harmony features in the game itself - the player's name, friends and presence, opening the overlay or pausing while it is open, and Save and Open file dialogs - showing Harmony text safely. Most games don't need it, since Harmony adds its overlay at upload. Use when a game should show the player's Harmony name or friends, control the overlay, or save files through Harmony.
-license: MIT
+license: MIT-0
 metadata:
   sdk-package: "@playharmony/sdk"
   sdk-status: preview

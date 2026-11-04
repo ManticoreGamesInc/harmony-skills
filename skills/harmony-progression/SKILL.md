@@ -1,7 +1,7 @@
 ---
 name: harmony-progression
 description: Add saves and progression to a web game - versioned saves that survive junk and updates, kept per device (or per Harmony player when the game uses the SDK), and XP, levels, currency, cosmetics, small capped upgrades, round rewards and a locker screen. Use when a game needs saved progress, XP, levels, unlocks, cosmetics, a shop, currency or upgrades, or its saves get lost, mixed up or broken by an update.
-license: MIT
+license: MIT-0
 compatibility: Web games in any engine. The Harmony parts need @playharmony/sdk; without it the game keeps one save per device.
 ---
 

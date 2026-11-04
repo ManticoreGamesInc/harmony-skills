@@ -1,7 +1,7 @@
 ---
 name: harmony-publish
 description: Get a web game ready to upload to Harmony - relative file addresses for every engine and bundler, no service workers or browser file pickers, a script that checks the build or zip by file and line, a .zip with index.html at the top or one .html file, and a listing file for the My Creations upload form. Never uploads. Use when someone wants to publish, upload, package or zip a game for Harmony, or a game works locally but breaks when hosted.
-license: MIT
+license: MIT-0
 compatibility: Any web game build. scripts/check_build.mjs needs Node 18 or newer and no packages.
 metadata:
   harmony-docs: "https://playharmony.ai/developers/sdk.md#preparing-your-game-for-upload"

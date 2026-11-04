@@ -1,7 +1,7 @@
 ---
 name: harmony-testing
 description: Add automated tests to a web game - seeded randomness, unit tests for rules, saves and settings, test hooks, a Playwright smoke test of the production build served from a subfolder with no console errors, two-player and phone-size runs, and screenshot comparisons. Use when a game needs tests, a smoke test, browser or end-to-end tests, Playwright, reproducible bugs, or a check that a build works before upload.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine. Browser tests need Node 18 or newer and Playwright; unit tests use the game's test runner (Vitest, Jest or node:test). Guidance only; no scripts.
 ---
 

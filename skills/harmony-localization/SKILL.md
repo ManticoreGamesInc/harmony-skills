@@ -1,7 +1,7 @@
 ---
 name: harmony-localization
 description: Translate a web game into other languages - strings in language files with context notes, plurals and formats through Intl, a language setting, fonts for Chinese, Japanese, Korean, Arabic, Cyrillic and other scripts, right-to-left layout, room for longer text, wrapped canvas text, translation drafts for native review, and a pseudo-language test. Use when a game needs other languages, translation, i18n, right-to-left or CJK support, or its text overflows in another language.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine. Guidance only; uses the browser's built-in Intl APIs and needs no packages.
 ---
 

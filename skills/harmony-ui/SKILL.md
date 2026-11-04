@@ -1,7 +1,7 @@
 ---
 name: harmony-ui
 description: Design and build a web game's menus, HUD and screens - a visual direction as theme tokens, title, pause, results and how-to-play screens, modals and toasts, focus and back routing for keyboard, controller and touch, and a HUD that reads at a glance, keeps clear of the Harmony badge and fits phones. Use when a game needs a title screen, menus, a HUD, dialogs or a UI style, or its UI is hard to read or can't be used with a controller.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine, with an HTML/CSS overlay or the engine's own UI. Guidance only; no scripts.
 ---
 

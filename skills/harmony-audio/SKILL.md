@@ -1,7 +1,7 @@
 ---
 name: harmony-audio
 description: Add sound and music to a web game - a Web Audio engine with volume buses, sound effects with variation and voice limits, gapless and layered music, ducking, 2D and 3D sound, pausing for hidden tabs and the Harmony overlay, mixing, and licensed sources. Use when a game needs sound effects, music or an audio engine, or its sound is silent, clipping, delayed, stuttering or missing on iPhone.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine, using the Web Audio API. Guidance only; no scripts.
 ---
 

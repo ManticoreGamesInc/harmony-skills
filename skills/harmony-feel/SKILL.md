@@ -1,7 +1,7 @@
 ---
 name: harmony-feel
 description: Make a web game feel good to play - responsive controls (input buffering, coyote time, acceleration curves) and layered feedback on every action (hit-stop, screen shake, squash and stretch, flashes, particles, tweened UI, vibration), within the player's reduced-motion and flashing settings. Use when a game feels flat, floaty, stiff or laggy, or needs juice, impact, screen shake, hit pause or particles.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine. Guidance only; no scripts.
 ---
 

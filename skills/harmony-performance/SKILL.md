@@ -1,7 +1,7 @@
 ---
 name: harmony-performance
 description: Make a web game load fast and run smoothly - measure first, shrink the download (textures, audio, models, fonts, code splitting), add a real loading screen and shader warm-up, and hold a steady frame rate on low-end laptops and phones with quality presets and a WebGL fallback for WebGPU. Use when a game loads slowly, stutters, drops frames, runs hot on phones, uses too much memory or has a big download.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine. The automated measurements need Node 18 or newer and Playwright with Chromium. Guidance only; no scripts.
 ---
 

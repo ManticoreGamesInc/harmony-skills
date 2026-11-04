@@ -1,7 +1,7 @@
 ---
 name: harmony-store-media
 description: Make the media for a game's Harmony page from the running game - a titled 1280x720 thumbnail, a title logo in the game's own font, store screenshots, a muted 6-second preview movie, the featured banner and an optional mobile portrait, each sized to Harmony's upload rules. Works for canvas, WebGL and HTML games in any engine. Use when a developer wants a thumbnail, cover image, title logo, banner, screenshots, a preview or hover clip, or all the store media for Harmony.
-license: MIT
+license: MIT-0
 compatibility: Needs a browser page the agent can run JavaScript in (its own browser tool, or Chrome or Edge through the bundled Playwright driver; games with no canvas need Playwright), Node 18 or newer, Python 3 with Pillow, and ffmpeg for the preview movie. Title lockups render with an installed Chrome, Edge or Chromium.
 ---
 

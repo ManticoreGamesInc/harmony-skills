@@ -55,7 +55,7 @@ Copy a skill's folder from `skills/` into your agent's skills folder. Check your
 
 ## Harmony terms
 
-The MIT license covers the files in this repository. It doesn't cover the Harmony SDK or the Harmony service, which have their own terms.
+The MIT-0 (MIT No Attribution) license covers the files in this repository, including skill instructions, examples and scripts. You may use, modify and redistribute them commercially, including in games hosted outside Harmony, without attribution. Third-party materials retain their own licenses. It doesn't cover the Harmony SDK or the Harmony service, which have their own terms.
 
 ## Contributing
 

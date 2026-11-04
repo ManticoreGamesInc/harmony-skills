@@ -1,7 +1,7 @@
 ---
 name: harmony-p2p-multiplayer
 description: Add online multiplayer for 2 to 4 players to a web game with no game server - one player hosts a room with a secure code, friends join it, and the game talks browser to browser over WebRTC (PeerJS). Covers IP-exposure consent, validating peer input, host-authoritative sync, lobbies, turn-based and hidden-information games, disconnects and two-window testing. Use when a game needs co-op or online play, "play with a friend", room codes, host and join, or netcode without a server.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine (Three.js, Babylon, PlayCanvas, Phaser, PixiJS, WebGPU, plain canvas). The room module needs PeerJS 1.5 from npm; its tests need Node 20 or newer.
 ---
 

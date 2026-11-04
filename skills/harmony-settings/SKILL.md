@@ -1,7 +1,7 @@
 ---
 name: harmony-settings
 description: Add a settings menu to a web game - graphics quality, volumes, key and controller remapping, sensitivity and touch controls, accessibility (text size, color-blind modes, reduced motion, subtitles) and language, stored on the device, applied at once, and usable with keyboard, controller and touch. Use when a game needs a settings or options menu, volume sliders, graphics options, rebinding or accessibility options, or its settings don't save or apply.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine. Guidance only; no scripts.
 ---
 

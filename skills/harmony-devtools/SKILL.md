@@ -1,7 +1,7 @@
 ---
 name: harmony-devtools
 description: Add developer-only tools to a web game, left out of the published build - a live tuning panel saved back to the config file, testing cheats with a release check, debug overlays, pause, frame step and slow motion, and performance metrics (frame times, GPU time, draw calls, memory). Use when the developer wants a dev panel, debug menu, tweakable values, cheats or god mode for testing, an FPS counter, or faster tuning and debugging.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine; the config file write-back uses the game's dev server (examples for Vite). Guidance only; no scripts.
 ---
 
