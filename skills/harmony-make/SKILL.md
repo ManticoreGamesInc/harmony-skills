@@ -1,7 +1,7 @@
 ---
 name: harmony-make
 description: Make a whole web game from an idea - a thorough interview in rounds that settles every part of the game and pushes back on vague answers and oversized scope, a short design brief the developer approves, then the game built in playable stages and packaged for upload to Harmony. Use when someone wants to make, build, start or prototype a new game ("make me a game where...", "a game like X but Y") or turn a game idea into a plan.
-license: MIT
+license: MIT-0
 compatibility: New web games in JavaScript or TypeScript (Vite by default), or an engine the developer picks. Guidance only; no scripts.
 ---
 

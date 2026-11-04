@@ -1,7 +1,7 @@
 ---
 name: harmony-models
 description: Get 3D models into a web game - built in code or procedurally, from CC0 libraries such as Kenney, Quaternius and Poly Haven, or with Blender or a text- or image-to-3D service only if the developer has one, then made web-ready as glTF/GLB with the right scale, a phone polygon budget and compressed meshes and textures. Use when a 3D web game needs models, props, characters or environments, replaces placeholder boxes, or has models that are too heavy, sideways, dark or slow to load.
-license: MIT
+license: MIT-0
 compatibility: 3D web games in any engine. Default path needs no extra tools; optional tools are only used when the developer has them. Guidance only; no scripts.
 ---
 

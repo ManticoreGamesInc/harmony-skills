@@ -1,7 +1,7 @@
 ---
 name: harmony-platforms
 description: Make a web game playable on phones, tablets and game controllers - touch controls, phone layouts, safe areas and orientation, Gamepad API support with controller-friendly menus and button prompts - and decide what to mark under Supported platforms when uploading to Harmony. Use when a game should work on mobile, touch or a controller, the developer asks about portrait or landscape, or needs its supported platforms picked.
-license: MIT
+license: MIT-0
 compatibility: Web games in any browser engine. Testing uses a desktop browser's device mode (Chrome, Edge or Firefox); a real phone and a real controller give the final check.
 ---
 

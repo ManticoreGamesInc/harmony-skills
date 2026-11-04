@@ -13,7 +13,7 @@
       "version": "0.1.0",
       "source": "./",
       "strict": false,
-      "license": "MIT",
+      "license": "MIT-0",
       "skills": [
         "./skills/harmony-make",
         "./skills/harmony-sdk",

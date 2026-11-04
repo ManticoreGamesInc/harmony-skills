@@ -1,7 +1,7 @@
 ---
 name: harmony-engines
 description: Get a Unity or Godot game onto Harmony - a lean, single-threaded web build packaged for upload and, only if the game needs Harmony features, a small bridge so C# or GDScript can use the player's name, friends, the overlay and files, with an editor fake for testing. Use when a Unity WebGL or Godot web build should run on Harmony, is too big, slow or broken when hosted, or needs Harmony features.
-license: MIT
+license: MIT-0
 compatibility: Unity 2022.3 or newer with WebGL (Web) build support; Godot 4.3 or newer with the Web export templates. The bridge loads the SDK from Harmony's CDN and needs no build tools; bridging other JavaScript modules needs Node 18 or newer and npm. Guidance only; no scripts.
 ---
 
