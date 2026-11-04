@@ -1,6 +1,6 @@
 ---
 name: harmony-store-media
-description: Make the media for a game's Harmony page from the running game - a titled 1280x720 thumbnail, a title logo in the game's own font, store screenshots, a muted 6-second preview movie, the featured banner and an optional mobile portrait, each sized to Harmony's upload rules. Works for canvas, WebGL and HTML games in any engine. Use when a developer wants a thumbnail, cover image, title logo, banner, screenshots, a preview or hover clip, or all the store media for Harmony.
+description: Make the media for a game's Harmony page from the running game - a titled 1280x720 thumbnail and a 1024x1024 square one, a title logo in the game's own font, store screenshots, a muted 6-second preview movie, the featured banner and an optional mobile portrait, each sized to Harmony's upload rules. Works for canvas, WebGL and HTML games in any engine. Use when a developer wants a thumbnail, cover image, title logo, banner, screenshots, a preview or hover clip, or all the store media for Harmony.
 license: MIT-0
 compatibility: Needs a browser page the agent can run JavaScript in (its own browser tool, or Chrome or Edge through the bundled Playwright driver; games with no canvas need Playwright), Node 18 or newer, Python 3 with Pillow, and ffmpeg for the preview movie. Title lockups render with an installed Chrome, Edge or Chromium.
 ---
@@ -20,6 +20,7 @@ Put everything in a `store-media/` folder at the game's root. Keep that folder o
 | File | What it is |
 | --- | --- |
 | `thumbnail.png` | 1280x720 thumbnail with the title on it |
+| `thumbnail_square.png` | 1024x1024 square thumbnail: a full picture with the title on it, for square cards |
 | `screenshot.png` | the same frame without the title |
 | `title.png` | the transparent title logo, trimmed |
 | `screens/1.png`, `screens/2.png`, ... | store screenshots with the game's UI, in page order, as many as the form shows |
@@ -36,6 +37,7 @@ Developers upload these on the game's page in My Creations on Harmony. These are
 | Upload | Rules |
 | --- | --- |
 | Thumbnail | 16:9 picture: PNG, JPEG, WebP, GIF, AVIF or BMP |
+| Square thumbnail (optional, if the form shows it) | a full, square picture with the title, for square cards (on phones and other square displays). The form crops it at 1024x1024, from the thumbnail or a picture of its own, and warns below 1024 pixels. Without one, square cards show the middle of the 16:9 thumbnail. It isn't the banner's square title logo, which is transparent and laid over other art |
 | Screenshots | up to the number the form shows, shown in this order on the game's page and cropped to landscape 16:9 or portrait 9:16 |
 | Preview movie (if the form shows it) | plays muted and looping over the game's card while a player points at it; MP4 or WebM, 16:9, at most 6 s and 1 MB |
 | Banner background art (optional) | 16:9, 3840x2160 preferred, at least 1920x1080; WebP, JPEG or PNG up to 10 MB; no text, titles or logos. The title, description and buttons sit over the left third, so the subject goes center or right. Ultrawide screens cut the top and bottom, phones cut the sides |
@@ -46,7 +48,7 @@ In the form's words: "If we feature your game, this banner appears at the top of
 
 ## Decide what to make
 
-- "All", "everything", "store media", or a list ending in "etc": make the full set (thumbnail and title logo, screenshots, preview movie, banner).
+- "All", "everything", "store media", or a list ending in "etc": make the full set (thumbnail, square thumbnail and title logo, screenshots, preview movie, banner).
 - A request that names pieces: make only those.
 - Otherwise, look in `store-media/` first, say in one line what's there, and ask which pieces to make (in the round below).
 
@@ -96,6 +98,14 @@ Skip the steps for pieces you aren't making.
    ```
 
    Keep the important part of the thumbnail away from its edges, where it can be covered or cropped (`--top-margin`, default 0.3, keeps a title placed at the top clear of the edge). Check the result at 320x180: the title reads at a glance and the scene still shows. Raise `--scrim` or `--outline` when the title blends in. Move the crop with `--focus x,y` rather than shrinking the title. Write `store-media/thumbnail.json`: `moment`, `titleSource`, `sizes`, `gameVersion`, `date`.
+
+   Then the square thumbnail, a full picture of its own rather than the middle of the 16:9 one, which often cuts a wide title:
+
+   ```
+   python <skill>/scripts/compose_thumbnail.py --shot <best frame> --title <square title png> --out store-media/thumbnail_square.png --size 1024x1024 --anchor center
+   ```
+
+   A title of two or more words reads larger stacked: use the square lockup (`"layout": "square"` in [references/title-logo.md](references/title-logo.md), the same one the banner's logo uses) as the title here, and the wide one when the title is a single word. Pick `--focus` for the square on its own, so the subject stays in frame, and check it at 256x256. Record it in `thumbnail.json` under `sizes`.
 5. **Store screenshots.** See [references/screenshots.md](references/screenshots.md).
 6. **Preview movie.** See [references/preview-movie.md](references/preview-movie.md).
 7. **Banner.** The background art, the title logo, and the mobile portrait when the form shows it. See [references/banner.md](references/banner.md).
