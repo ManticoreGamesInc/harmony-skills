@@ -27,7 +27,7 @@ A new game's form asks for these, in this order:
 | 4 | Supported platforms | PC, Mobile, Game controller and VR, each Supported, Unknown or Not supported. Once Mobile is Supported, the form also asks for Portrait and Landscape. |
 | 5 | Players | Required. Checkboxes: Single player, Local multiplayer, Online multiplayer, Co-op. Tick at least one; with none, the form says "Choose at least one." A new game starts with Single player ticked. |
 | 6 | Your game file | Required. One `.html` file or a `.zip`. |
-| 7 | Thumbnail | A 16:9 picture. |
+| 7 | Thumbnail | A 16:9 picture, and an optional square thumbnail for square cards, if the form shows it. |
 | 8 | Preview movie | If the form shows it. |
 | 9 | Screenshots | If the form shows it. |
 | 10 | Banner image | Optional: background art and a title logo, plus an optional Mobile portrait image. |
@@ -70,7 +70,7 @@ pick the closest ones in the form. How many people play goes in Players, not in 
 ### Media
 
 Point at the files the store media step made, when the game has them (a `store-media/` folder,
-for example): `thumbnail.png`, `preview.mp4`, `screens/1.png` onward in order, and the banner's
+for example): `thumbnail.png`, `thumbnail_square.png`, `preview.mp4`, `screens/1.png` onward in order, and the banner's
 `banner/background.webp` and `banner/logo.png`, and the banner's Mobile portrait,
 `banner/portrait.webp`, if the store media step made one. Missing ones are listed as missing,
 not invented. Word the preview movie and screenshots as "if the form shows it".
@@ -168,6 +168,7 @@ release/<game>-<version>.zip  (<files> files, <MB> MB unpacked; compare with the
 
 ## 7 to 10. Media
 - Thumbnail: <path or "missing">
+- Square thumbnail (optional): <path or "missing">. Without one, square cards show the middle of the thumbnail.
 - Preview movie (if the form shows it): <path or "missing">
 - Screenshots (if the form shows it): <paths, in order, or "missing">
 - Banner (optional): <background path>, <logo path>, or "missing"
