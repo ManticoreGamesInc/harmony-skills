@@ -26,6 +26,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSource } from "./sdk_docs_source.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));   // handles spaces and drive letters
 const SKILLS = join(ROOT, "skills");
@@ -45,17 +46,6 @@ const HARMONY_PACKAGE = "@(?:[\\w-]*harmony[\\w-]*\\/[\\w-]+|[\\w-]+\\/[\\w-]*ha
 const RETIRED = ["attachGameServices", "ManticoreHarmony", "pictureUrl", "joinUrl", "loadFakeGameServices"];
 // An attach call: attach({ ... }) from the package, or PlayHarmony.attach({ ... }) from a script tag.
 const ATTACH_CALL = /(?:\bPlayHarmony\??\.|(?<![\w.]))attach\s*\(\s*\{/g;
-
-async function readSource(source) {
-	if (/^https?:\/\//.test(source)) {
-		const response = await fetch(source);
-		if (!response.ok) {
-			throw new Error(source + " answered " + response.status);
-		}
-		return await response.text();
-	}
-	return readFileSync(source, "utf8");
-}
 
 function parseDocs(text) {
 	const calls = new Set();
