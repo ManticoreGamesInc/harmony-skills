@@ -13,7 +13,7 @@ The examples call the handle `harmony`: the value `attach` or `PlayHarmony.attac
 - [The handle, and errors from every call](#the-handle-and-errors-from-every-call)
 - [harmony.detach](#harmonydetach)
 - [Overlay: open, close, toggle, isOpen, on](#overlay)
-- [auth: getSession, signIn, onSessionChanged](#auth)
+- [auth: getSession, getBackendToken, signIn, onSessionChanged](#auth)
 - [friends: list, onPresenceChanged](#friends)
 - [files: save, open](#files)
 - [Testing with the fake](#testing-with-the-fake)
@@ -283,6 +283,32 @@ if (session.kind === "guest" || session.kind === "account") {
   nameLabel.textContent = "Not signed in";
 }
 ```
+
+### harmony.auth.getBackendToken
+
+```ts
+harmony.auth.getBackendToken(): Promise<BackendToken>
+```
+
+Proves the current guest or account to the game's own server. It works in a Harmony-hosted frame and on the game's own page. The result has `token: string` and `expiresAtMs: number` (Unix epoch milliseconds). It never opens sign-in. It rejects with `not_signed_in` while signed out or awaiting legal acceptance, or `unsupported` on a backend without this feature.
+
+```js
+const { token } = await harmony.auth.getBackendToken();
+const response = await fetch("https://your-server.example/saves", {
+  headers: { Authorization: `Bearer ${token}` },
+});
+if (!response.ok) {
+  throw new Error("Loading saves failed");
+}
+// showProgress is the game's own. The server chooses the owner from the verified sub.
+showProgress(await response.json());
+```
+
+The server verifies the RS256 signature using the Harmony environment's trusted JWKS signing keys. Require the configured issuer, audience `urn:ugs:game-backend:<gameId>`, header type `ugs-backend-identity+jwt`, and a valid expiry. Configure the issuer and JWKS address on the server; never take addresses from the token. Use the verified `sub` as the save owner's account ID. An account ID supplied by the browser, including one from `getSession()`, cannot authenticate a request. Verification is local; no token-validation API call is needed.
+
+Tokens last at most five minutes and can expire sooner. They remain usable until expiry after sign-out or revocation. Request one before a server request, send it over HTTPS, and keep it out of URLs, logs and persistent storage. They grant no Game Services API permissions.
+
+The fake signs with a public development key and a separate `.invalid` issuer. Accept these tokens only with an explicitly configured local-development verifier, never against production data.
 
 ### harmony.auth.signIn
 

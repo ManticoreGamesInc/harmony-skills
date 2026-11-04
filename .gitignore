@@ -8,6 +8,7 @@ dist/
 release/
 
 # Caches, logs and scratch
+out/
 .cache/
 temp/
 *.log

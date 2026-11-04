@@ -275,6 +275,8 @@ First in the page's `<head>`:
 
 ## Keeping it in step with sdk.md
 
+For saves on the game's own backend, extend the bridge to request `harmony.auth.getBackendToken()` when sending the server request. A `session` event's `accountId` does not authenticate the player. The server must verify the token before choosing the owner; see the [backend-token contract](../../harmony-sdk/references/api.md#harmonyauthgetbackendtoken). Keep tokens out of general engine events, logs and persistent storage.
+
 - Every Harmony call in the file must be one sdk.md documents. The SDK is in preview: new calls
   arrive often, and an update may still change or remove one, so check the file against sdk.md
   when it changes.
