@@ -32,7 +32,7 @@ Add the SDK only when the game itself needs one of these:
 - the player's friends and their presence (`harmony.friends`, for players signed in with an account)
 - to open or close the overlay from the game, or pause while it is open (`harmony.open`, `harmony.on`)
 - to move the overlay's badge to another corner, or change the overlay's hotkey (the `badgeCorner` and `hotkey` options)
-- Save, Save As or Open dialogs for files on the player's device (`harmony.files`)
+- the explicit Save, Save As or Open service API for files on the player's device (`harmony.files`)
 - a website invitation carrying the game's lobby code (`harmony.getJoinUrl`); the game still owns its multiplayer service and lobby validation
 
 If the game needs none of these, don't add the SDK, and don't ask for a Game ID: skipping it is the normal case. Without the SDK:
@@ -40,7 +40,17 @@ If the game needs none of these, don't add the SDK, and don't ask for a Game ID:
 - The game keeps one save for the device, since it doesn't know who is playing.
 - The overlay's badge sits in the bottom-right corner, and Shift+Tab opens the overlay. The game can't move the badge or change the key, so it keeps that corner clear and doesn't use Shift+Tab.
 - The game isn't told when the overlay opens. Opening it moves keyboard focus out of the game, so the window gets a `blur` event: pause on `blur` (which also covers switching tabs or apps), and let the player resume rather than resuming on `focus`. The game's own pause key or button stays as well.
-- Downloads and `<input type="file">` still work in a hosted game, so a save can be exported as a download and imported from a file. Only the browser's own Save and Open pickers (`showSaveFilePicker` and the like) don't.
+- Downloads and `<input type="file">` still work in a hosted game, so a save can be exported as a download and imported from a file. Basic native Open/edit/Save, multiple-file Open and cancellation need no SDK attachment when compatibility is installed before game scripts and the host negotiates support. Do not assume every hosted build has that runtime; automatic installation and migration remain separate rollout work.
+
+That basic picker support was released in 1.1.22, with native evidence on Windows Chromium
+153.0.8010.12. Do not claim other-browser or native Escape-key dismissal coverage. Its temporary
+handles cannot be persisted in IndexedDB, structured-cloned or transferred to workers, and do
+not have native handle brands or directory support. Ordinary IndexedDB saves are unaffected.
+Native Save selection can clear an existing file before returning its handle; abort does not
+restore the pre-selection bytes, and a failed close does not prove whether it committed.
+The native facade and `harmony.files` have separate admission paths and handles or file IDs;
+do not interchange them. Use the published [SDK guidance](https://playharmony.ai/developers/sdk.md)
+for the supported hosted workflow; keep download/file-input fallbacks where it is unavailable.
 
 The SDK can be added later, when the game's design calls for one of its features.
 
