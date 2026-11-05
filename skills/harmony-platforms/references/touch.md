@@ -171,7 +171,7 @@ window.addEventListener("pointerdown", (e) => {
 
 - At least 44 CSS pixels across, 64 or more for the main action, with 8 px or more between them.
 - Not within about 20 px of the left or right screen edge, where Android's back swipe starts.
-- Clear of the Harmony overlay badge's corner (bottom right by default, and always bottom right without the Harmony SDK).
+- Clear of the Harmony overlay badge's corner (top right on a phone and bottom right elsewhere by default, and always that default without the Harmony SDK).
 - Inside the safe-area insets.
 - Show a pressed state, since a thumb hides the button it presses.
 

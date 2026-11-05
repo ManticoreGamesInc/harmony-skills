@@ -71,7 +71,7 @@ Common phone viewports in CSS pixels: 360x780 and 390x844 portrait, 780x360 and 
 
 - **Scale the UI with the screen,** not fixed pixel panels made for 1920x1080. Use `clamp()` for font sizes and `min()` for panel widths, or the engine's canvas scaler.
 - **Text** at least 12 CSS px, 16 for anything the player reads during play. Keep contrast over the scene with a backing or shadow.
-- **HUD** in the corners and edges, inside the safe-area insets, away from where the thumbs rest and from the overlay badge's corner (bottom right unless a game with the Harmony SDK moves it).
+- **HUD** in the corners and edges, inside the safe-area insets, away from where the thumbs rest and from the overlay badge's corner (top right on a phone unless a game with the Harmony SDK moves it).
 - **Menus** as one column of large buttons on phones. Long lists scroll (`touch-action: pan-y`), and nothing important sits below the fold without a hint.
 - **No hover-only information.** Tooltips need a tap (or a long press) on touch screens.
 - **Pick the layout by size and pointer, not the user agent:** `(pointer: coarse)` for touch-first, and the viewport size for the layout.
