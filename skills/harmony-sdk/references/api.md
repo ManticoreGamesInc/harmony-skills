@@ -146,6 +146,8 @@ function quitToTitle(): void {
 
 ## harmony.getJoinUrl
 
+Harmony does not currently provide a lobby service. This helper enables invitations for the game's own or an external lobby service by carrying its lobby code through Harmony's game launch flow. That service creates and manages lobbies, admits players, and connects them to the game session.
+
 ```ts
 harmony.getJoinUrl(options?: { params?: Readonly<Record<string, string>> }): Promise<string | null>
 ```
