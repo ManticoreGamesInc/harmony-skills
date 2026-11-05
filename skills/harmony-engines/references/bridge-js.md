@@ -277,6 +277,8 @@ First in the page's `<head>`:
 
 For saves on the game's own backend, extend the bridge to request `harmony.auth.getBackendToken()` when sending the server request. A `session` event's `accountId` does not authenticate the player. The server must verify the token before choosing the owner; see the [backend-token contract](../../harmony-sdk/references/api.md#harmonyauthgetbackendtoken). Keep tokens out of general engine events, logs and persistent storage.
 
+For lobby invitations, extend the bridge only when the game needs them. Call `harmony.getJoinUrl({ params: { join: roomCode } })` after the lobby is ready and pass the URL or unavailable/error result back as data. Capture `new URLSearchParams(location.search).get("join")` before a router changes the address, then pass that decoded string to the engine's own lobby validation. Do not pass sharing keys or build a game-host URL. The fake and detached handles return `null` for valid calls; invalid arguments reject with `invalid_params`. The [invitation API reference](../../harmony-sdk/references/api.md#harmonygetjoinurl) defines the reserved names, bounds and recipient access checks. Prepare the URL before enabling Copy Invite: a clipboard write must begin in a real browser click handler, without waiting for an engine event round trip. Keep a selectable URL as a fallback.
+
 - Every Harmony call in the file must be one sdk.md documents. The SDK is in preview: new calls
   arrive often, and an update may still change or remove one, so check the file against sdk.md
   when it changes.

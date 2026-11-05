@@ -18,7 +18,7 @@ JavaScript bridge (the harmony-engines skill shows how); the protocol, security 
 here apply unchanged, and those games are tested in their web build with two browser windows.
 
 **On Harmony.** Harmony hosts the game and adds its overlay to every upload with no code, but
-runs no game servers and has no invite API, so these rooms work the same there. The game needs
+runs no game servers or invitation-sending service, so these rooms work the same there. The game needs
 neither the Harmony SDK nor a Game ID: players type a name, and inviting is copying the room
 code. A few things change: the game doesn't pause for the overlay during a session, and it runs
 in a frame inside Harmony's page, where it can't read the clipboard. A game that already uses

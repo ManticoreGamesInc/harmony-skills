@@ -12,6 +12,7 @@ The examples call the handle `harmony`: the value `attach` or `PlayHarmony.attac
 - [PlayHarmony.attach, from a script tag](#playharmonyattach-from-a-script-tag)
 - [The handle, and errors from every call](#the-handle-and-errors-from-every-call)
 - [harmony.detach](#harmonydetach)
+- [harmony.getJoinUrl](#harmonygetjoinurl)
 - [Overlay: open, close, toggle, isOpen, on](#overlay)
 - [auth: getSession, getBackendToken, signIn, onSessionChanged](#auth)
 - [friends: list, onPresenceChanged](#friends)
@@ -133,7 +134,7 @@ No call reports the SDK's version. It is in the browser console on every attach,
 harmony.detach(): void
 ```
 
-Removes the overlay and every listener the SDK added, as when the game shuts down. The handle does nothing after this.
+Removes the overlay and every listener the SDK added, as when the game shuts down. After detach, `getJoinUrl` still validates its arguments and resolves to `null` for valid calls.
 
 ```ts
 // showTitleScreen is your own.
@@ -142,6 +143,77 @@ function quitToTitle(): void {
   showTitleScreen();
 }
 ```
+
+## harmony.getJoinUrl
+
+```ts
+harmony.getJoinUrl(options?: { params?: Readonly<Record<string, string>> }): Promise<string | null>
+```
+
+Builds a website invitation for the attached game in its selected environment. Supply a lobby code with `harmony.getJoinUrl({ params: { join: roomCode } })`, or omit the options for a plain play link. The SDK supplies the game identity and website address; don't construct hosting URLs yourself. This only creates a URL: it does not navigate, copy, send an invitation, authenticate, validate the lobby or make a network request. It works while signed out and does not inherit the current query or any credentials.
+
+Valid calls resolve to `null` in the fake, after detach, on an inert authentication-return handle, or without usable game/website context. Invalid arguments reject with `code: "invalid_params"`, even on fake and detached handles. Enable this feature only with an SDK release that has the helper and a website that forwards creator parameters.
+
+- Pass literal names and values, without pre-encoding. Names must be nonempty strings and values must be strings; both must be valid Unicode. Empty values are allowed.
+- At most 32 pairs and 4096 bytes after form URL encoding, including `=` and `&` but not `?`. Invalid input fails rather than being truncated.
+- Names are case-sensitive. `mg:*`, `k`, `friend`, `t`, `code`, `state`, `error`, `error_description`, `error_uri` and `iss` are reserved.
+- The URL grants no access. The recipient still passes the website's sign-in, legal and game-access checks. A recipient who needs a sharing key needs a separately authorized sharing link; the helper never extracts one. Existing friend joins keep their own behavior.
+
+Prepare the URL when the lobby is ready, before the Copy Invite click. Keep a visible, readonly URL field for manual copying. This example uses controls owned by one lobby: remove them when that lobby closes and create fresh controls for the next one.
+
+```html
+<button id="copy-invite" type="button" disabled>Copy Invite</button>
+<input id="invite-url" aria-label="Invitation URL" readonly>
+<p id="invite-status" role="status"></p>
+```
+
+```js
+const copyButton = document.getElementById("copy-invite");
+const inviteField = document.getElementById("invite-url");
+const inviteStatus = document.getElementById("invite-status");
+
+async function prepareInvite() {
+  if (!harmony) {
+    inviteStatus.textContent = "Invitations are unavailable in this session.";
+    return;
+  }
+  try {
+    const url = await harmony.getJoinUrl({ params: { join: roomCode } });
+    if (url === null) {
+      inviteStatus.textContent = "Invitations are unavailable in this session.";
+      return;
+    }
+    inviteField.value = url;
+    copyButton.disabled = false;
+  } catch (error) {
+    inviteStatus.textContent = error?.code === "invalid_params"
+      ? "This lobby code cannot be included in an invitation."
+      : "Could not prepare the invitation.";
+  }
+}
+
+copyButton.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(inviteField.value);
+    inviteStatus.textContent = "Invitation copied.";
+  } catch {
+    inviteField.focus();
+    inviteField.select();
+    inviteStatus.textContent = "Copy the selected invitation URL manually.";
+  }
+});
+
+void prepareInvite();
+```
+
+The clipboard write starts directly from the click, without awaiting URL creation first. On the recipient's game page, capture the decoded lobby code before a router changes the address:
+
+```js
+const invitedRoom = new URLSearchParams(location.search).get("join");
+if (invitedRoom !== null) joinLobby(invitedRoom);
+```
+
+`joinLobby` is the game's own lobby validation and connection. Treat the code as untrusted input, handle expired or unavailable rooms, and keep manual room-code entry available. Test the real invitation flow on Harmony; the fake returns `null` and cannot prove forwarding or recipient access.
 
 ## Overlay
 
