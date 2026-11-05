@@ -9,7 +9,7 @@ metadata:
 
 # Harmony SDK
 
-Harmony hosts web games. Players play them in the browser, as a guest or with a Harmony account. The Harmony SDK (`@playharmony/sdk`) lets a game read who is playing and their friends, control the Harmony overlay, and show file dialogs.
+Harmony hosts web games. Players play them in the browser, as a guest or with a Harmony account. The Harmony SDK (`@playharmony/sdk`) lets a game read who is playing and their friends, control the Harmony overlay, show file dialogs, and create website invitations carrying a lobby code.
 
 Most games don't need the SDK. A game with no SDK and no Game ID uploads and plays on Harmony as it is, and its players still get the overlay, sign-in, friends and chat. Add the SDK only when the game itself uses one of the features below.
 
@@ -33,6 +33,7 @@ Add the SDK only when the game itself needs one of these:
 - to open or close the overlay from the game, or pause while it is open (`harmony.open`, `harmony.on`)
 - to move the overlay's badge to another corner, or change the overlay's hotkey (the `badgeCorner` and `hotkey` options)
 - Save, Save As or Open dialogs for files on the player's device (`harmony.files`)
+- a website invitation carrying the game's lobby code (`harmony.getJoinUrl`); the game still owns its multiplayer service and lobby validation
 
 If the game needs none of these, don't add the SDK, and don't ask for a Game ID: skipping it is the normal case. Without the SDK:
 
@@ -49,7 +50,7 @@ Once a game attaches to Harmony itself, Harmony sees this on upload and doesn't 
 
 Ask in one round, and only what the game's code and design brief (`docs/design.md`, if there is one) don't already answer:
 
-- **Which features the game uses:** the player's name, friends and presence, a button that opens the overlay, pausing while the overlay is open, file dialogs. Recommended: only the features the game's design uses. With none, don't add the SDK, and stop here.
+- **Which features the game uses:** the player's name, friends and presence, a button that opens the overlay, pausing while the overlay is open, file dialogs, lobby invitation URLs. Recommended: only the features the game's design uses. With none, don't add the SDK, and stop here.
 - **The Game ID,** only for a standalone real game. Hosted games and the fake can call `attach()` without options. It is on the game's page in My Creations on Harmony. There is no default; never invent one. If they don't have it yet, put the placeholder `YOUR_GAME_ID` in one constant and list it as open when you finish.
 
 Don't ask whether the game uses Shift+Tab: search its input code. If the developer says "you decide", use the recommendation and say which features you picked.
@@ -128,7 +129,7 @@ While developing, the page loads the fake loader in place of this one: see [Test
 - Attach as the page loads, not after a title screen or menu, since a sign-in returns to the game's page to finish. If the canvas comes later, attach to a wrapper element that is in the page from the start, and put the title screen and canvas inside it.
 - Import the SDK before any code that changes the page's address, such as a client-side router: sign-in returns to the address the game started at.
 - Keep the handle as it is. The handle and its `auth`, `friends` and `files` are frozen: don't add fields to it, and keep it out of stores that wrap objects in deep proxies, such as Solid's `createStore` or MobX's `observable`.
-- Call `harmony.detach()` when the game shuts down. The handle does nothing after that.
+- Call `harmony.detach()` when the game shuts down. After detach, `getJoinUrl` still validates its arguments and resolves to `null` for valid calls.
 
 ## Show text from Harmony as text, never as HTML
 
@@ -162,6 +163,7 @@ See [references/showing-text.md](references/showing-text.md) for examples in pla
 - **Check files the player opens.** The player can pick any file. Validate `data` before using it: copy each known field, checked, into a new object, and never merge the parsed data over the game's state or defaults with `Object.assign`, spread or a deep merge. Show its `name` as text. Stored saves in `localStorage` get the same checks.
 - **Use `playingSameGame` to find friends visibly playing this game.** Titles and other activity remain inside the overlay.
 - **Every listener returns a stop function.** Call it when the screen or component that listens goes away.
+- **Invitation URLs grant no access.** Use `harmony.getJoinUrl({ params: { join: roomCode } })` for the attached game; don't construct hosting URLs or copy sharing keys. Prepare the URL before the Copy Invite click, handle `null` and `invalid_params`, and write to the clipboard directly from that click with a manual-copy fallback. The fake returns `null`. See [the invitation contract and example](references/api.md#harmonygetjoinurl).
 - **No call reports the SDK's version.** It is in the browser console on every attach, and in the overlay's About dialog, opened from the Harmony mark in its header.
 
 ## Test with the fake

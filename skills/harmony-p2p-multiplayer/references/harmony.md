@@ -8,10 +8,10 @@ skill applies unchanged. This file covers what is different on Harmony.
 **A game doesn't need the Harmony SDK (`@playharmony/sdk`) or a Game ID for any of this.**
 Harmony adds its overlay to every uploaded game with no code, and many games never install the
 SDK. Without it, players type a name and invite friends by copying the room code, and
-everything in this skill works. When the game already uses the SDK, it can add two extras: the
+everything in this skill works. When the game already uses the SDK, it can add extras: the
 player's Harmony name as the starting name, and an Invite button that copies the code and opens
-the overlay, where the player can paste it in chat.
-Don't install the SDK only for these. Every SDK call below sits behind a check that the game
+the overlay, where the player can paste it in chat. A game that needs a website link carrying its lobby code can also use the SDK's invitation URL helper.
+Keep plain room-code sharing available. Every SDK call below sits behind a check that the game
 has the SDK, so the game runs the same without it.
 
 The SDK's docs for agents are at https://playharmony.ai/developers/sdk.md; read them before
@@ -28,8 +28,7 @@ change a call, so where this file and those docs differ, follow the docs.
 
 ## What Harmony does and doesn't do for multiplayer
 
-- **No invite or room API.** The game can't send chat messages, invites or friend requests,
-  with or without the SDK. The overlay handles those. Players share the room code themselves.
+- **No room service or invitation sending.** The game can't send chat messages, invites or friend requests. Players share a room code themselves, or a game using the SDK can prepare a website invitation with `harmony.getJoinUrl`. The helper only creates a URL; it doesn't create or join the room.
 - **Friends are read only, and only with the SDK.** With an account session,
   `harmony.friends.list()` gives the player's friends with `online` and `playingSameGame`. It rejects with `guest_not_allowed` for a guest and `not_signed_in` when no
   one is signed in; show the room panel without friends then. The list is enough for a hint
@@ -89,8 +88,8 @@ game:
   code and opens the overlay with `harmony.open()`, where the player can paste it to a friend
   in chat. Say what to do next: "Code copied. Paste it to a friend in chat." Without the SDK,
   leave the button out; Copy does the job.
-- Send the bare code, never a URL. Chat may not make links clickable, and a code reads
-  cleanly when typed.
+- Keep the bare code available: it reads cleanly when typed, and chat may not make links clickable.
+- **Copy Invite URL (SDK only).** A game can prepare `harmony.getJoinUrl({ params: { join: roomCode } })` when the lobby is ready, then copy that prepared URL directly from a click, with a selectable-text fallback. Read `join` from the recipient game's query before a router changes it and pass it through the game's existing room validation and consent flow. The fake returns `null`; invalid arguments reject with `invalid_params`. The URL grants no game or room access and includes no sharing key. See the [complete invitation example](../../harmony-sdk/references/api.md#harmonygetjoinurl) for lifecycle, bounds and reserved names. Do not substitute a constructed hosting URL when the helper is unavailable.
 
 ## The overlay and pausing
 
