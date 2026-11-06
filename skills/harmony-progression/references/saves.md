@@ -347,17 +347,14 @@ or move it. Call both from a click or key handler.
 ### Without the SDK
 
 Export as a download, and import from a file the player picks with `<input type="file">`. Both
-work in a game hosted on Harmony. Native `showSaveFilePicker`/`showOpenFilePicker` can provide
-basic Open/edit/Save without SDK attachment only when compatibility is installed before game
-scripts and the host negotiates support; the 1.1.22 artifact release does not establish that
-every hosted build has been migrated. Keep the download/file-input path where that support is
-unavailable (see the `harmony-publish` skill and published SDK guidance). Native facade handles
-are temporary, not IndexedDB save data or worker-transferable objects, and do not support
-directories or native branding. The evidenced native profile is Windows Chromium 153.0.8010.12,
-not broader browsers or native Escape-key dismissal. Native Save selection can clear an existing
-file before returning its handle; abort does not restore those bytes. Its admission and handles
-are separate from the SDK's `harmony.files` service and file IDs. A game can also leave Export
-and Import out, and say on its settings or stats screen that saves stay in this browser on this device.
+work in a game hosted on Harmony, so this is the default. If the game also calls
+`showSaveFilePicker` or `showOpenFilePicker`, catch the error and fall back to that path: they
+work in a hosted game only where Harmony's compatibility support is installed (see the
+`harmony-publish` skill). Don't use native Save to write over a file the player can't afford to
+lose: picking the file can clear it before the game writes, and an abort doesn't restore it.
+Picker handles are temporary, so don't store them in IndexedDB or send them to a worker. A game
+can also leave Export and Import out, and say on its settings or stats screen that saves stay in
+this browser on this device.
 
 ```ts
 exportButton.addEventListener("click", () => {
