@@ -34,13 +34,21 @@ differ, follow it.
   click, or from `harmony.on("close")` in a game that uses the Harmony SDK.
 - Downloads, `<input type="file">`, writing to the clipboard and `navigator.share` work. Reading
   the clipboard doesn't.
-- The browser's own file pickers (`showSaveFilePicker`, `showOpenFilePicker`,
-  `showDirectoryPicker`) don't work. Use a download and `<input type="file">` instead, or
-  `harmony.files.save` and `harmony.files.open` in a game that uses the Harmony SDK.
+- `showSaveFilePicker` and `showOpenFilePicker` work only where Harmony's compatibility support
+  is installed, which a game can't check. Keep a download and `<input type="file">` path as the
+  default, or use `harmony.files.save` and `harmony.files.open` in a game that uses the Harmony
+  SDK. If the game also calls a native picker, catch its error and fall back to that path.
+  `showDirectoryPicker` doesn't work. `check_build.mjs` warns on the first two and fails on the
+  directory picker.
 - Service workers can't be registered, so PWA features don't work: no offline cache, no install.
 - Saves in `localStorage` and `IndexedDB` belong to the game alone.
 - Upload limits (size, file count) are shown in My Creations when uploading. Never assume a
   number: check there.
+
+Native Save can clear an existing file when the player picks it, before the game writes, and
+an abort doesn't restore it. Don't use it to overwrite a file the player can't afford to lose.
+Picker handles are temporary: don't store them in IndexedDB or send them to a worker. See the
+published [SDK guidance](https://playharmony.ai/developers/sdk.md) for details.
 
 ## Steps
 
