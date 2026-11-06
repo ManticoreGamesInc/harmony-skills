@@ -38,14 +38,15 @@ Only what the player needs to decide what to do next. List it, then cut:
 ## The Harmony badge corner
 
 Harmony shows its overlay badge in one corner of every game it hosts, with or without the
-Harmony SDK: bottom right by default. Only a game that uses the SDK can move it, with the
-`badgeCorner` option of `attach`.
+Harmony SDK: by default top right on a phone and bottom right elsewhere, following the layout
+when the phone rotates or the window resizes. Only a game that uses the SDK can pick a corner,
+with the `badgeCorner` option of `attach`, and that corner holds in every layout.
 
 - Keep HUD elements, buttons and touch controls out of that corner, with some margin.
-- Without the SDK, the badge stays bottom right, so lay out the HUD to leave that corner free
-  (a fire button for right thumbs sits a little above or left of it).
-- In a game that already uses the SDK, if the layout needs the bottom-right corner (a fire
-  button, a minimap), move the badge to a corner the game leaves free with `badgeCorner`.
+- Without the SDK, leave the top-right corner free in the phone layout and the bottom-right
+  corner free elsewhere (there, a fire button for right thumbs sits a little above or left of it).
+- In a game that already uses the SDK, if the layout needs the default corner (a fire button,
+  a minimap, a score), move the badge to a corner the game leaves free with `badgeCorner`.
 - Toasts and banners avoid it too.
 
 ## Safe areas and phones
@@ -53,8 +54,8 @@ Harmony SDK: bottom right by default. Only a game that uses the SDK can move it,
 - Respect the phone's safe areas: padding from `env(safe-area-inset-top)` and the others, and
   `viewport-fit=cover` in the viewport meta tag, so nothing sits under a notch, a rounded corner
   or the home bar.
-- On touch screens, thumbs cover the bottom corners: HUD information goes along the top, touch
-  controls along the bottom.
+- On touch screens, thumbs cover the bottom corners: HUD information goes along the top, short
+  of the badge's top-right corner, and touch controls along the bottom.
 - Portrait and landscape need their own layouts if the game supports both; check both at phone
   size.
 - Size HUD elements relative to the viewport with limits (`clamp(14px, 2.2vmin, 22px)`), so they

@@ -117,8 +117,9 @@ build. It shows how the game reacts; only a web build shows the real SDK.
 - **Compression:** the engine references give general advice; always check that the uploaded
   build loads.
 - **Shift+Tab** opens the Harmony overlay in every hosted game; don't bind it to a game action.
-- **The overlay's badge** sits in the bottom-right corner of every hosted game. Keep the HUD
-  clear of it; only a game with the bridge could move it.
+- **The overlay's badge** sits in the top-right corner of every hosted game on a phone and the
+  bottom-right corner elsewhere. Keep the HUD clear of it; only a game with the bridge could
+  move it.
 - **Saves** in the engine's web storage (`PlayerPrefs`, `user://`): one save for the device
   without the bridge, keyed on `accountId` with it.
 

@@ -38,7 +38,7 @@ Add the SDK only when the game itself needs one of these:
 If the game needs none of these, don't add the SDK, and don't ask for a Game ID: skipping it is the normal case. Without the SDK:
 
 - The game keeps one save for the device, since it doesn't know who is playing.
-- The overlay's badge sits in the bottom-right corner, and Shift+Tab opens the overlay. The game can't move the badge or change the key, so it keeps that corner clear and doesn't use Shift+Tab.
+- The overlay's badge sits in the top-right corner on a phone and the bottom-right corner elsewhere, and Shift+Tab opens the overlay. The game can't move the badge or change the key, so it keeps those corners clear and doesn't use Shift+Tab.
 - The game isn't told when the overlay opens. Opening it moves keyboard focus out of the game, so the window gets a `blur` event: pause on `blur` (which also covers switching tabs or apps), and let the player resume rather than resuming on `focus`. The game's own pause key or button stays as well.
 - Downloads and `<input type="file">` still work in a hosted game, so a save can be exported as a download and imported from a file. Keep that as the default. `showSaveFilePicker` and `showOpenFilePicker` work only where Harmony's compatibility support is installed, which the game can't check: if it calls them, it catches the error and falls back to the download and file input. They are separate from `harmony.files`: don't mix their handles with its file IDs.
 

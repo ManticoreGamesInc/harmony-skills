@@ -36,7 +36,7 @@ Import the SDK before any code that changes the page's address, such as a client
 | `container` | `HTMLElement` | The canvas or wrapper. Hosted games and the fake default to the document; standalone real games require a connected wrapper or canvas, never `body` or `html`. |
 | `gameInfo` | `{ name?: string }` | Display metadata for standalone and fake games; ignored in hosted games, which use their backend listing. |
 | `hotkey` | `{ key, shift?, ctrl?, alt?, meta? } \| null` | The key that opens and closes the overlay, matched against `KeyboardEvent.key`. Shift+Tab by default. `null` turns it off. |
-| `badgeCorner` | `"bottom-right" \| "bottom-left" \| "top-right" \| "top-left"` | The corner of the game the overlay's badge sits in. Bottom right by default. |
+| `badgeCorner` | `"bottom-right" \| "bottom-left" \| "top-right" \| "top-left"` | The corner of the game the overlay's badge sits in. By default top right on a phone and bottom right otherwise, following the layout as it changes; a corner set here applies in every layout. |
 
 The promise rejects with a `code`:
 
