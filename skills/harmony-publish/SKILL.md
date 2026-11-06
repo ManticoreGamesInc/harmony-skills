@@ -34,25 +34,21 @@ differ, follow it.
   click, or from `harmony.on("close")` in a game that uses the Harmony SDK.
 - Downloads, `<input type="file">`, writing to the clipboard and `navigator.share` work. Reading
   the clipboard doesn't.
-- Do not assume native file pickers work in a hosted build. Basic `showSaveFilePicker` and
-  `showOpenFilePicker` support requires compatibility installed before game scripts and a host
-  that negotiates support. The artifacts released in 1.1.22 support Open/edit/Save, multiple
-  selection and cancellation without SDK attachment, but automatic hosted installation and
-  migration remain separate rollout work. `showDirectoryPicker` is not adapted. For the
-  default upload path, keep downloads and `<input type="file">`, or the separate
-  `harmony.files.save`/`open` service in an SDK-integrated game; the checker remains conservative.
+- `showSaveFilePicker` and `showOpenFilePicker` work only where Harmony's compatibility support
+  is installed, which a game can't check. Keep a download and `<input type="file">` path as the
+  default, or use `harmony.files.save` and `harmony.files.open` in a game that uses the Harmony
+  SDK. If the game also calls a native picker, catch its error and fall back to that path.
+  `showDirectoryPicker` doesn't work. `check_build.mjs` warns on the first two and fails on the
+  directory picker.
 - Service workers can't be registered, so PWA features don't work: no offline cache, no install.
 - Saves in `localStorage` and `IndexedDB` belong to the game alone.
 - Upload limits (size, file count) are shown in My Creations when uploading. Never assume a
   number: check there.
 
-Native picker evidence covers Windows Chromium 153.0.8010.12, not other browsers or native
-Escape-key dismissal. Facade handles are temporary: no IndexedDB persistence, structured clone,
-worker transfer or native branding. Ordinary IndexedDB saves still work. Native Save selection
-can clear an existing file before its handle returns; later abort cannot restore pre-selection
-bytes. See the published [SDK guidance](https://playharmony.ai/developers/sdk.md) for the
-supported subset and commit semantics. A released runtime alone is not evidence that an upload
-can omit the existing fallbacks or build checks.
+Native Save can clear an existing file when the player picks it, before the game writes, and
+an abort doesn't restore it. Don't use it to overwrite a file the player can't afford to lose.
+Picker handles are temporary: don't store them in IndexedDB or send them to a worker. See the
+published [SDK guidance](https://playharmony.ai/developers/sdk.md) for details.
 
 ## Steps
 

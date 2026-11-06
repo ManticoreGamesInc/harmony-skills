@@ -10,11 +10,12 @@
 // Errors (the game will break when hosted):
 // - no index.html at the top of the folder or zip (or the zip holds one folder around it)
 // - a service worker is registered
-// - the browser's own file pickers (showSaveFilePicker, showOpenFilePicker, showDirectoryPicker)
+// - the browser's directory picker (showDirectoryPicker)
 // - dev cheats (the "__DEV_CHEATS__" marker) left in the build
 // - a zip entry whose path leaves the top folder ("..", a leading "/" or a drive letter)
 // Warnings (check by hand):
 // - a file is loaded by an address starting with "/" instead of a relative one
+// - the browser's save and open file pickers (showSaveFilePicker, showOpenFilePicker)
 // - the clipboard is read (navigator.clipboard.readText / read)
 // - a web app manifest (PWA leftovers)
 // - addresses pointing at localhost
@@ -43,9 +44,15 @@ const RULES = [
 	},
 	{
 		level: "error",
+		id: "directory-picker",
+		pattern: /\bshowDirectoryPicker\s*\(/,
+		message: "Uses the browser's directory picker, which doesn't work in a hosted game. Use a download and <input type=\"file\">, or harmony.files.save and harmony.files.open in a game with the Harmony SDK.",
+	},
+	{
+		level: "warning",
 		id: "file-picker",
-		pattern: /\b(showSaveFilePicker|showOpenFilePicker|showDirectoryPicker)\s*\(/,
-		message: "Uses the browser's own file picker, which doesn't work in a hosted game. Use a download and <input type=\"file\">, or harmony.files.save and harmony.files.open in a game with the Harmony SDK.",
+		pattern: /\b(showSaveFilePicker|showOpenFilePicker)\s*\(/,
+		message: "Uses the browser's save or open file picker, which works in a hosted game only where Harmony's compatibility support is installed. Keep a download and <input type=\"file\"> fallback, and catch the picker's error.",
 	},
 	{
 		level: "error",
