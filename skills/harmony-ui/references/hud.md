@@ -44,7 +44,7 @@ with the `badgeCorner` option of `attach`, and that corner holds in every layout
 
 - Keep HUD elements, buttons and touch controls out of that corner, with some margin.
 - Without the SDK, leave the top-right corner free in the phone layout and the bottom-right
-  corner free elsewhere (a fire button for right thumbs sits a little above or left of it).
+  corner free elsewhere (there, a fire button for right thumbs sits a little above or left of it).
 - In a game that already uses the SDK, if the layout needs the default corner (a fire button,
   a minimap, a score), move the badge to a corner the game leaves free with `badgeCorner`.
 - Toasts and banners avoid it too.

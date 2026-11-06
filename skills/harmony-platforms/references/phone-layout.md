@@ -67,6 +67,8 @@ syncOrientation();
 
 ## Lay out at phone size
 
+Harmony counts a device as a phone only when its primary pointer is coarse and the layout viewport is narrower than 768 px in portrait, or at most 1024 by 600 px in landscape. A desktop browser window dragged narrow is not a phone, so the badge stays bottom right there. Check the phone layout in the browser's device emulation, which reports a coarse pointer.
+
 Common phone viewports in CSS pixels: 360x780 and 390x844 portrait, 780x360 and 844x390 landscape. Tablets: 768x1024 and 820x1180.
 
 - **Scale the UI with the screen,** not fixed pixel panels made for 1920x1080. Use `clamp()` for font sizes and `min()` for panel widths, or the engine's canvas scaler.
